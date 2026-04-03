@@ -458,9 +458,21 @@ function updateMarkers() {
     marker._no = d.no;
     marker._color = color;
     marker._cat = d.category;
-    naver.maps.Event.addListener(marker, 'click', function() {
-      focusMarker(d.no);
-    });
+    (function(m, item) {
+      naver.maps.Event.addListener(m, 'click', function() {
+        var name = currentLang === 'ko' ? item.nameKo : (item.nameEn || item.nameKo);
+        if (infowindow) infowindow.close();
+        infowindow = new naver.maps.InfoWindow({
+          content: '<div style="padding:8px 12px;font-size:13px;white-space:nowrap;color:#333">' + name + '</div>',
+          borderWidth: 1, borderColor: '#ddd', backgroundColor: '#fff'
+        });
+        infowindow.open(map, m);
+        map.setCenter(m.getPosition());
+        map.setZoom(15);
+        highlightMarker(m);
+        highlightCard(item.no);
+      });
+    })(marker, d);
     markers.push(marker);
   });
 
