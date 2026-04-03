@@ -87,7 +87,8 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .sort-btn.active{background:rgba(168,85,247,0.15);color:#D8B4FE;border-color:rgba(168,85,247,0.3)}
 
 /* Map */
-.map-wrap{margin:10px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,85,247,0.15);height:45vh;min-height:280px;position:relative;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.map-wrap{margin:10px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,85,247,0.15);height:45vh;min-height:280px;position:sticky;top:60px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:height 0.3s ease,min-height 0.3s ease,border-radius 0.3s ease}
+.map-wrap.collapsed{height:22vh;min-height:140px;border-radius:0 0 16px 16px;margin-top:0}
 #map{width:100%;height:100%}
 .my-loc-btn{position:absolute;bottom:14px;left:14px;z-index:10;width:38px;height:38px;border-radius:50%;border:1px solid rgba(168,85,247,0.2);background:rgba(18,18,18,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
 .my-loc-btn:hover{background:rgba(168,85,247,0.2);border-color:rgba(168,85,247,0.4)}
@@ -126,7 +127,8 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
   .gate-btn{padding:16px 32px}
   .gate-divider{display:none}
   .content-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
-  .map-wrap{margin:0;height:calc(100vh - 200px);position:sticky;top:140px}
+  .map-wrap{margin:0;height:calc(100vh - 200px);position:sticky;top:140px;transition:none}
+  .map-wrap.collapsed{height:calc(100vh - 200px);min-height:unset;border-radius:16px;margin-top:0}
   .card-list{padding:0 0 40px;max-height:calc(100vh - 200px);overflow-y:auto}
   .card-list::-webkit-scrollbar{width:4px}
   .card-list::-webkit-scrollbar-track{background:transparent}
@@ -599,6 +601,25 @@ document.addEventListener('DOMContentLoaded', function() {
   renderSortBar();
   renderCards();
   initMap();
+
+  /* ---- Mobile: collapse map on scroll ---- */
+  var mapWrap = document.querySelector('.map-wrap');
+  var cardList = document.querySelector('.card-list');
+  if (mapWrap && cardList && window.innerWidth < 768) {
+    var lastY = 0;
+    window.addEventListener('scroll', function() {
+      var rect = cardList.getBoundingClientRect();
+      var wasCollapsed = mapWrap.classList.contains('collapsed');
+      if (rect.top < 300) {
+        mapWrap.classList.add('collapsed');
+      } else {
+        mapWrap.classList.remove('collapsed');
+      }
+      if (wasCollapsed !== mapWrap.classList.contains('collapsed') && map) {
+        setTimeout(function() { map.autoResize(); }, 350);
+      }
+    }, { passive: true });
+  }
 });
 
 /* ---- Service Worker ---- */
