@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Treasure Hunt for ARMY</title>
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9025cad5e682c5c472c19ec9263528c6&libraries=clusterer"></script>
+<script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=gektkc7tyn&language=ko"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f5f5f5;color:#333}
@@ -31,8 +31,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .filter-btn:hover{border-color:#7b2ff7}
 .filter-btn.active{background:#7b2ff7;color:#fff;border-color:#7b2ff7}
 
-.map-wrap{margin:8px;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);height:45vh;min-height:280px}
+.map-wrap{margin:8px;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);height:45vh;min-height:280px;position:relative}
 #map{width:100%;height:100%}
+.my-loc-btn{position:absolute;bottom:12px;left:12px;z-index:10;width:36px;height:36px;border-radius:50%;border:none;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+.my-loc-btn:hover{background:#f0f0f0}
+.my-loc-btn svg{width:20px;height:20px}
+.my-loc-btn.loading{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
 .card-list{padding:4px 8px 80px}
 .card{background:#fff;border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);cursor:pointer;transition:all 0.2s;border-left:4px solid #ccc}
@@ -87,7 +92,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 <div class="filters" id="filters"></div>
 
 <div class="content-wrap">
-  <div class="map-wrap"><div id="map"></div></div>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <button class="my-loc-btn" id="myLocBtn" onclick="showMyLocation()" title="내 위치">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="8"/></svg>
+    </button>
+  </div>
   <div class="card-list" id="cardList"></div>
 </div>
 
@@ -101,7 +111,7 @@ const RAW_DATA =[ { "eventKo": "○ 외국인 대상 고양콘서트 티켓 제�
 const LANG_KEY = 'thfa_lang';
 let currentLang = localStorage.getItem(LANG_KEY) || (navigator.language.startsWith('ko') ? 'ko' : 'en');
 let currentFilter = 'all';
-let map, markers = [], clusterer, infowindow;
+let map, markers = [], markerCluster, infowindow, myLocMarker;
 
 const CAT_KEYWORDS = {
   food: ['음식','식당','카페','커피','빵','베이커리','치킨','피자','햄버거','분식','한식','중식','일식','양식','고기','삼겹','갈비','국밥','떡볶이','맥주','주점','술','bar','food','restaurant','cafe','chicken','pizza','burger','bakery','bread','dessert','rice','noodle','meat','bbq','beer','pub','떡','디저트','밥','면','국수','초밥','돈까스','제과','과자','아이스크림','ice cream','tea','차','brunch','브런치','밀키트','반찬','도시락','죽','soup','stew','찌개','전골','곱창','족발','보쌈','김밥','라멘','ramen','우동','파스타','pasta','샐러드','salad','스테이크','steak','와플','waffle','toast','토스트','요거트','yogurt','smoothie','스무디','juice','주스','wine','와인','cocktail','칵테일','pocha','포차','izakaya'],
@@ -119,7 +129,7 @@ function categorize(typeKo, typeEn) {
   return 'etc';
 }
 
-const DATA = RAW_DATA.map(d => ({ ...d, category: categorize(d.typeKo, d.typeEn) }));
+const DATA = RAW_DATA.map(function(d) { return Object.assign({}, d, { category: categorize(d.typeKo, d.typeEn) }); });
 
 const CAT_META = {
   all:      { ko: '전체', en: 'All',      color: '#7b2ff7' },
@@ -133,21 +143,35 @@ function toggleLang() {
   currentLang = currentLang === 'ko' ? 'en' : 'ko';
   localStorage.setItem(LANG_KEY, currentLang);
   document.getElementById('langBtn').textContent = currentLang === 'ko' ? 'EN' : 'KO';
-  document.querySelectorAll('[data-ko]').forEach(el => {
+  document.querySelectorAll('[data-ko]').forEach(function(el) {
     el.textContent = el.getAttribute('data-' + currentLang);
   });
   renderFilters();
   renderCards();
+  reloadMapWithLang();
+}
+
+function reloadMapWithLang() {
+  var script = document.querySelector('script[src*="oapi.map.naver.com"]');
+  if (script) script.remove();
+  var s = document.createElement('script');
+  s.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=gektkc7tyn&language=' + currentLang;
+  s.onload = function() {
+    initMap();
+  };
+  document.head.appendChild(s);
 }
 
 function renderFilters() {
-  const wrap = document.getElementById('filters');
+  var wrap = document.getElementById('filters');
   wrap.innerHTML = '';
-  for (const [key, meta] of Object.entries(CAT_META)) {
-    const btn = document.createElement('button');
+  for (var key in CAT_META) {
+    var meta = CAT_META[key];
+    var btn = document.createElement('button');
     btn.className = 'filter-btn' + (currentFilter === key ? ' active' : '');
     btn.textContent = meta[currentLang];
-    btn.onclick = () => setFilter(key);
+    btn.setAttribute('data-cat', key);
+    btn.onclick = function() { setFilter(this.getAttribute('data-cat')); };
     wrap.appendChild(btn);
   }
 }
@@ -161,7 +185,7 @@ function setFilter(f) {
 
 function filtered() {
   if (currentFilter === 'all') return DATA;
-  return DATA.filter(d => d.category === currentFilter);
+  return DATA.filter(function(d) { return d.category === currentFilter; });
 }
 
 function getMapLink(d) {
@@ -172,101 +196,129 @@ function getMapLink(d) {
 }
 
 function renderCards() {
-  const wrap = document.getElementById('cardList');
+  var wrap = document.getElementById('cardList');
   wrap.innerHTML = '';
-  const list = filtered();
-  list.forEach(d => {
-    const card = document.createElement('div');
+  var list = filtered();
+  list.forEach(function(d) {
+    var card = document.createElement('div');
     card.className = 'card cat-' + d.category;
     card.id = 'card-' + d.no;
-    const name = currentLang === 'ko' ? d.nameKo : (d.nameEn || d.nameKo);
-    const type = currentLang === 'ko' ? d.typeKo : (d.typeEn || d.typeKo);
-    const addr = currentLang === 'ko' ? d.addressKo : (d.addressEn || d.addressKo);
-    const evt = currentLang === 'ko' ? d.eventKo : (d.eventEn || d.eventKo);
-    const mapLabel = currentLang === 'ko' ? '길찾기' : 'Directions';
+    var name = currentLang === 'ko' ? d.nameKo : (d.nameEn || d.nameKo);
+    var type = currentLang === 'ko' ? d.typeKo : (d.typeEn || d.typeKo);
+    var addr = currentLang === 'ko' ? d.addressKo : (d.addressEn || d.addressKo);
+    var evt = currentLang === 'ko' ? d.eventKo : (d.eventEn || d.eventKo);
+    var mapLabel = currentLang === 'ko' ? '길찾기' : 'Directions';
     card.innerHTML = '<span class="num">' + d.no + '</span>' +
       '<div class="name">' + name + '</div>' +
       '<div class="type">' + type + ' | ' + CAT_META[d.category][currentLang] + '</div>' +
       '<div class="addr">' + addr + '</div>' +
       (evt ? '<div class="event-tag">' + evt + '</div>' : '') +
       '<a class="map-link" href="' + getMapLink(d) + '" target="_blank" rel="noopener">' + mapLabel + '</a>';
-    card.onclick = (e) => { if (e.target.tagName !== 'A') focusMarker(d.no); };
+    card.onclick = function(e) { if (e.target.tagName !== 'A') focusMarker(d.no); };
     wrap.appendChild(card);
   });
 }
 
-function createMarkerImage(color) {
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">' +
+function markerIconSvg(color) {
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">' +
     '<path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.3 21.7 0 14 0z" fill="' + color + '"/>' +
-    '<circle cx="14" cy="14" r="6" fill="white"/></svg>';
-  return new kakao.maps.MarkerImage(
-    'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
-    new kakao.maps.Size(28, 40),
-    { offset: new kakao.maps.Point(14, 40) }
+    '<circle cx="14" cy="14" r="6" fill="white"/></svg>'
   );
 }
 
 function updateMarkers() {
   if (!map) return;
-  clusterer.clear();
-  markers.forEach(m => m.setMap(null));
+  markers.forEach(function(m) { m.setMap(null); });
   markers = [];
-  const list = filtered();
-  list.forEach(d => {
+  var list = filtered();
+  list.forEach(function(d) {
     if (!d.lat || !d.lng) return;
-    const color = CAT_META[d.category] ? CAT_META[d.category].color : '#9e9e9e';
-    const marker = new kakao.maps.Marker({
-      position: new kakao.maps.LatLng(d.lat, d.lng),
-      image: createMarkerImage(color),
+    var color = CAT_META[d.category] ? CAT_META[d.category].color : '#9e9e9e';
+    var marker = new naver.maps.Marker({
+      position: new naver.maps.LatLng(d.lat, d.lng),
+      map: map,
+      icon: {
+        url: markerIconSvg(color),
+        size: new naver.maps.Size(28, 40),
+        anchor: new naver.maps.Point(14, 40)
+      },
       title: d.nameKo
     });
     marker._no = d.no;
-    kakao.maps.event.addListener(marker, 'click', function() {
+    naver.maps.Event.addListener(marker, 'click', function() {
       focusMarker(d.no);
     });
     markers.push(marker);
   });
-  clusterer.addMarkers(markers);
 }
 
 function focusMarker(no) {
-  const d = DATA.find(x => x.no === no);
+  var d = DATA.find(function(x) { return x.no === no; });
   if (!d || !d.lat || !d.lng) return;
-  const pos = new kakao.maps.LatLng(d.lat, d.lng);
+  var pos = new naver.maps.LatLng(d.lat, d.lng);
   map.setCenter(pos);
-  map.setLevel(3);
-  const name = currentLang === 'ko' ? d.nameKo : (d.nameEn || d.nameKo);
+  map.setZoom(15);
+  var name = currentLang === 'ko' ? d.nameKo : (d.nameEn || d.nameKo);
   if (infowindow) infowindow.close();
-  infowindow = new kakao.maps.InfoWindow({
-    content: '<div style="padding:5px 10px;font-size:13px;white-space:nowrap">' + name + '</div>',
-    position: pos
+  infowindow = new naver.maps.InfoWindow({
+    content: '<div style="padding:8px 12px;font-size:13px;white-space:nowrap">' + name + '</div>',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff'
   });
-  const m = markers.find(x => x._no === no);
+  var m = markers.find(function(x) { return x._no === no; });
   if (m) infowindow.open(map, m);
   highlightCard(no);
 }
 
 function highlightCard(no) {
-  document.querySelectorAll('.card.highlight').forEach(c => c.classList.remove('highlight'));
-  const card = document.getElementById('card-' + no);
+  document.querySelectorAll('.card.highlight').forEach(function(c) { c.classList.remove('highlight'); });
+  var card = document.getElementById('card-' + no);
   if (card) {
     card.classList.add('highlight');
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
+function showMyLocation() {
+  if (!navigator.geolocation) {
+    alert(currentLang === 'ko' ? '이 브라우저에서 위치 서비스를 지원하지 않습니다.' : 'Geolocation is not supported by this browser.');
+    return;
+  }
+  var btn = document.getElementById('myLocBtn');
+  btn.classList.add('loading');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    btn.classList.remove('loading');
+    var lat = pos.coords.latitude, lng = pos.coords.longitude;
+    var position = new naver.maps.LatLng(lat, lng);
+    if (myLocMarker) myLocMarker.setMap(null);
+    myLocMarker = new naver.maps.Marker({
+      position: position,
+      map: map,
+      icon: {
+        content: '<div style="width:16px;height:16px;background:#4285f4;border:3px solid #fff;border-radius:50%;box-shadow:0 0 6px rgba(66,133,244,0.6)"></div>',
+        anchor: new naver.maps.Point(8, 8)
+      }
+    });
+    map.setCenter(position);
+    map.setZoom(14);
+  }, function(err) {
+    btn.classList.remove('loading');
+    alert(currentLang === 'ko' ? '위치를 가져올 수 없습니다. 위치 권한을 확인하세요.' : 'Unable to get your location. Please check location permissions.');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
 function initMap() {
-  const container = document.getElementById('map');
-  map = new kakao.maps.Map(container, {
-    center: new kakao.maps.LatLng(37.6565, 126.832),
-    level: 7
-  });
-  map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
-  clusterer = new kakao.maps.MarkerClusterer({
-    map: map,
-    averageCenter: true,
-    minLevel: 5,
-    disableClickZoom: false
+  var container = document.getElementById('map');
+  container.innerHTML = '';
+  map = new naver.maps.Map(container, {
+    center: new naver.maps.LatLng(37.6565, 126.832),
+    zoom: 12,
+    zoomControl: true,
+    zoomControlOptions: {
+      position: naver.maps.Position.TOP_RIGHT
+    }
   });
   updateMarkers();
 }
@@ -274,13 +326,15 @@ function initMap() {
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('langBtn').textContent = currentLang === 'ko' ? 'EN' : 'KO';
   if (currentLang === 'en') {
-    document.querySelectorAll('[data-ko]').forEach(el => {
+    document.querySelectorAll('[data-ko]').forEach(function(el) {
       el.textContent = el.getAttribute('data-en');
     });
+    reloadMapWithLang();
+  } else {
+    initMap();
   }
   renderFilters();
   renderCards();
-  initMap();
 });
 </script>
 </body>
