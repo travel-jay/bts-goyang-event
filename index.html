@@ -437,7 +437,7 @@ function placeMarkers(data) {
     const pos = new naver.maps.LatLng(d.lat, d.lng);
     const marker = new naver.maps.Marker({
       position: pos,
-      map: naverMap,
+      // map은 클러스터러가 관리 — 직접 설정 금지
       icon: {
         url: getMarkerSvg(d.category),
         size: new naver.maps.Size(36, 44),
@@ -461,7 +461,6 @@ function placeMarkers(data) {
       naver.maps.Event.addListener(m, 'click', function() {
         closeAllInfoWindows();
         iw_ref.open(naverMap, m);
-        // Scroll to card
         const card = document.getElementById('card-' + idx);
         if (card) {
           card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -476,16 +475,17 @@ function placeMarkers(data) {
   try {
     clusterer = new MarkerClustering({
       minClusterSize: 3,
-      maxZoom: 15,
+      maxZoom: 16,
       map: naverMap,
       markers: markers,
       disableClickZoom: false,
-      gridSize: 120,
+      gridSize: 100,
       icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
       indexGenerator: [2, 5, 10],
       stylingFunction: clusterStyling
     });
   } catch(e) {
+    console.error('MarkerClustering error:', e);
     markers.forEach(m => m.setMap(naverMap));
   }
 }
@@ -729,7 +729,7 @@ function updateMapMarkers() {
     const pos = new naver.maps.LatLng(d.lat, d.lng);
     const marker = new naver.maps.Marker({
       position: pos,
-      map: naverMap,
+      // map은 클러스터러가 관리 — 직접 설정 금지
       icon: {
         url: getMarkerSvg(d.category),
         size: new naver.maps.Size(36, 44),
@@ -767,11 +767,11 @@ function updateMapMarkers() {
   try {
     clusterer = new MarkerClustering({
       minClusterSize: 3,
-      maxZoom: 15,
+      maxZoom: 16,
       map: naverMap,
       markers: filteredMarkers,
       disableClickZoom: false,
-      gridSize: 120,
+      gridSize: 100,
       icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
       indexGenerator: [2, 5, 10],
       stylingFunction: clusterStyling
