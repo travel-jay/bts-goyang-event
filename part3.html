@@ -454,13 +454,14 @@ function renderCards() {
     return;
   }
 
-  el.innerHTML = data.map((d, i) => {
+  el.innerHTML = data.map((d) => {
+    const origIdx = storeData.indexOf(d);
     const distStr = (userLat && d.lat && d.lng)
       ? `<div class="distance">${t.distPrefix}${formatDist(calcDist(userLat, userLng, d.lat, d.lng))}${t.distSuffix}</div>` : '';
     const eventStr = getEvent(d) ? `<div class="event-tag">${getEvent(d)}</div>` : '';
     const mapUrl = getMapLink(d);
 
-    return `<div class="card cat-${d.category}" id="card-${i}" onclick="cardClick(${i})">
+    return `<div class="card cat-${d.category}" id="card-${origIdx}" onclick="cardClick(${origIdx})">
       <div class="num">#${d.no}</div>
       <div class="name">${getName(d)}</div>
       <div class="type">${getType(d)}</div>
@@ -492,8 +493,7 @@ function updateMapMarkers() {
   const filteredMarkers = [];
   const filteredIWs = [];
 
-  data.forEach((d, i) => {
-    // Find original index in storeData for card linking
+  data.forEach((d) => {
     const origIdx = storeData.indexOf(d);
     if (!d.lat || !d.lng) return;
 
@@ -518,18 +518,18 @@ function updateMapMarkers() {
     filteredIWs.push(iw);
     filteredMarkers.push(marker);
 
-    ;(function(m, iw_ref, origI) {
+    ;(function(m, iw_ref, cardIdx) {
       naver.maps.Event.addListener(m, 'click', function() {
         filteredIWs.forEach(fw => { if (fw && fw.close) fw.close(); });
         iw_ref.open(naverMap, m);
-        const card = document.getElementById('card-' + origI);
+        const card = document.getElementById('card-' + cardIdx);
         if (card) {
           card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           card.classList.add('highlight');
           setTimeout(() => card.classList.remove('highlight'), 2000);
         }
       });
-    })(marker, iw, i);
+    })(marker, iw, origIdx);
   });
 
   markers = filteredMarkers;
