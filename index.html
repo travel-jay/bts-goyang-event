@@ -483,27 +483,27 @@ function placeMarkers(data) {
       gridSize: 120,
       icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
       indexGenerator: [2, 5, 10],
-      stylingFunction: function(clusterMarker, count) {
-        clusterMarker.getElement().querySelector('div').textContent = count;
-      }
+      stylingFunction: clusterStyling
     });
   } catch(e) {
     markers.forEach(m => m.setMap(naverMap));
   }
 }
 
-function makeClusterIcon(size) {
-  const s = size <= 2 ? 36 : size <= 5 ? 44 : 52;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
-    <circle cx="${s/2}" cy="${s/2}" r="${s/2-2}" fill="#A855F7" fill-opacity="0.85"/>
-    <circle cx="${s/2}" cy="${s/2}" r="${s/2-6}" fill="#7c3aed"/>
-    <div></div>
-  </svg>`;
+function makeClusterIcon(threshold) {
+  const s = threshold < 5 ? 40 : threshold < 10 ? 48 : 56;
   return {
-    content: `<div style="width:${s}px;height:${s}px;border-radius:50%;background:linear-gradient(135deg,#A855F7,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${s<=36?'0.8':'0.9'}rem;box-shadow:0 2px 8px rgba(168,85,247,0.4);border:2px solid rgba(255,255,255,0.2)"><div></div></div>`,
+    content: `<div style="width:${s}px;height:${s}px;border-radius:50%;background:linear-gradient(135deg,#A855F7,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;box-shadow:0 2px 10px rgba(168,85,247,0.5);border:2px solid rgba(255,255,255,0.3);cursor:pointer;"></div>`,
     size: new naver.maps.Size(s, s),
     anchor: new naver.maps.Point(s/2, s/2)
   };
+}
+
+function clusterStyling(clusterMarker, count) {
+  var el = clusterMarker.getElement();
+  if (!el) return;
+  var s = count < 10 ? 40 : count < 50 ? 48 : 56;
+  el.innerHTML = '<div style="width:' + s + 'px;height:' + s + 'px;border-radius:50%;background:linear-gradient(135deg,#A855F7,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;box-shadow:0 2px 10px rgba(168,85,247,0.5);border:2px solid rgba(255,255,255,0.3);cursor:pointer;">' + count + '</div>';
 }
 
 function panToMarker(idx) {
@@ -774,9 +774,7 @@ function updateMapMarkers() {
       gridSize: 120,
       icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
       indexGenerator: [2, 5, 10],
-      stylingFunction: function(clusterMarker, count) {
-        clusterMarker.getElement().querySelector('div').textContent = count;
-      }
+      stylingFunction: clusterStyling
     });
   } catch(e) {
     filteredMarkers.forEach(m => m.setMap(naverMap));
