@@ -1,0 +1,662 @@
+;
+
+// ===================== CONFIG =====================
+const CAT_META = {
+  food:     { ko:'음식',   en:'Food',     zh:'餐饮',   ja:'グルメ',       color:'#ff9800', icon:'🍽️' },
+  shopping: { ko:'쇼핑',   en:'Shopping', zh:'购物',   ja:'ショッピング', color:'#D8B4FE', icon:'🛍️' },
+  activity: { ko:'액티비티',en:'Activity', zh:'活动',   ja:'アクティビティ',color:'#60a5fa', icon:'🎯' },
+  beauty:   { ko:'뷰티',   en:'Beauty',   zh:'美容',   ja:'ビューティー', color:'#ec4899', icon:'💄' },
+  etc:      { ko:'기타',   en:'Etc',      zh:'其他',   ja:'その他',       color:'rgba(255,255,255,0.4)', icon:'📍' }
+};
+
+const CAT_KEYWORDS = {
+  food:     ['카페','커피','베이커리','레스토랑','식당','음식','치킨','피자','쌀국수','라멘','한식','중식','일식','양식','분식','떡','순대','국밥','갈비','삼겹','해물','전골','찜','족발','냉면','칼국수','파스타','스테이크','샌드위치','버거','beer','bar','pub','브루어리','다이닝','bistro','cafe','coffee','bakery','restaurant','food','chicken'],
+  shopping: ['쇼핑','마트','편의점','슈퍼','옷','의류','패션','잡화','기념품','souvenir','shopping','mart','store','boutique','fashion','gift','선물','악세서리','보석','주얼리','craft','공예'],
+  activity: ['노래방','볼링','당구','pc방','게임','방탈출','테마','체험','투어','관광','스포츠','운동','fitness','gym','클라이밍','수영','골프','bowling','karaoke','game','tour','activity','experience','adventure'],
+  beauty:   ['성형','에스테틱','피부과','피부','뷰티','성형외과','beauty','aesthetic','plastic','skincare','dermatology','clinic','클리닉','spa','스파','헤어','nail','네일','살롱','salon','마사지','massage'],
+  etc:      []
+};
+
+const UI_TEXT = {
+  ko: {
+    filterAll: '전체',
+    sortDefault: '기본순',
+    sortDist: '거리순',
+    guideTitle: '이벤트 참여 방법',
+    searchPlaceholder: '매장명 또는 주소 검색',
+    noResults: '검색 결과가 없습니다',
+    mapLinkText: '지도 보기',
+    distPrefix: '내 위치에서',
+    distSuffix: '',
+    locError: '위치 정보를 가져올 수 없습니다.',
+    locDenied: '위치 권한이 거부되었습니다.',
+    langNext: 'EN'
+  },
+  en: {
+    filterAll: 'All',
+    sortDefault: 'Default',
+    sortDist: 'By Distance',
+    guideTitle: 'How to Participate',
+    searchPlaceholder: 'Search store name or address',
+    noResults: 'No results found',
+    mapLinkText: 'View Map',
+    distPrefix: '',
+    distSuffix: ' from here',
+    locError: 'Unable to get your location.',
+    locDenied: 'Location permission denied.',
+    langNext: '中文'
+  },
+  zh: {
+    filterAll: '全部',
+    sortDefault: '默认排序',
+    sortDist: '按距离',
+    guideTitle: '活动参与方法',
+    searchPlaceholder: '搜索店铺名称或地址',
+    noResults: '未找到结果',
+    mapLinkText: '查看地图',
+    distPrefix: '距离',
+    distSuffix: '',
+    locError: '无法获取您的位置。',
+    locDenied: '位置权限被拒绝。',
+    langNext: '日本語'
+  },
+  ja: {
+    filterAll: '全て',
+    sortDefault: 'デフォルト',
+    sortDist: '距離順',
+    guideTitle: 'イベント参加方法',
+    searchPlaceholder: '店舗名または住所を検索',
+    noResults: '結果が見つかりません',
+    mapLinkText: '地図を見る',
+    distPrefix: 'ここから',
+    distSuffix: '',
+    locError: '位置情報を取得できません。',
+    locDenied: '位置情報の権限が拒否されました。',
+    langNext: '한국어'
+  }
+};
+
+// ===================== STATE =====================
+let currentLang = localStorage.getItem('thfa_lang') || 'ko';
+let currentCat = 'all';
+let currentSort = 'default';
+let userLat = null, userLng = null;
+let markers = [];
+let naverMap = null;
+let clusterer = null;
+let infoWindows = [];
+let storeData = [];
+
+// ===================== CATEGORY =====================
+function getCategory(item) {
+  const combined = [item.typeKo||'', item.typeEn||'', item.nameKo||'', item.nameEn||''].join(' ').toLowerCase();
+  for (const cat of ['beauty','food','shopping','activity']) {
+    if (CAT_KEYWORDS[cat].some(k => combined.includes(k.toLowerCase()))) return cat;
+  }
+  return 'etc';
+}
+
+// ===================== DATA =====================
+function prepareData() {
+  storeData = RAW_DATA.map(d => ({
+    ...d,
+    category: getCategory(d)
+  }));
+}
+
+// ===================== GATE / LANG =====================
+function enterSite(lang) {
+  currentLang = lang;
+  localStorage.setItem('thfa_lang', lang);
+  sessionStorage.setItem('thfa_gate', '1');
+
+  const gate = document.getElementById('gate');
+  gate.style.transition = 'opacity 0.5s, visibility 0.5s';
+  gate.style.opacity = '0';
+  gate.style.visibility = 'hidden';
+  gate.style.pointerEvents = 'none';
+
+  const main = document.getElementById('mainContent');
+  main.style.display = 'block';
+
+  const mapLang = (lang === 'ko') ? 'ko' : 'en';
+  const script = document.createElement('script');
+  script.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=gektkc7tyn&language=' + mapLang;
+  script.onload = function() {
+    applyLang(lang);
+    initApp();
+  };
+  document.head.appendChild(script);
+}
+
+function toggleLang() {
+  const order = ['ko','en','zh','ja'];
+  const idx = order.indexOf(currentLang);
+  const next = order[(idx + 1) % order.length];
+  currentLang = next;
+  localStorage.setItem('thfa_lang', next);
+  applyLang(next);
+  renderFilters();
+  renderSortBar();
+  renderCards();
+}
+
+function applyLang(lang) {
+  const t = UI_TEXT[lang] || UI_TEXT.ko;
+
+  // Update langBtn label
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.textContent = t.langNext;
+
+  // Update data-ko/en/zh/ja elements
+  document.querySelectorAll('[data-ko]').forEach(el => {
+    const val = el.getAttribute('data-' + lang) || el.getAttribute('data-ko');
+    if (val) el.textContent = val;
+  });
+
+  // Search placeholder
+  const inp = document.getElementById('searchInput');
+  if (inp) {
+    inp.placeholder = inp.getAttribute('data-' + lang + '-placeholder') || inp.getAttribute('data-ko-placeholder') || '';
+  }
+}
+
+// ===================== MAP =====================
+function initMap() {
+  if (typeof naver === 'undefined' || !naver.maps) return;
+  const center = new naver.maps.LatLng(37.676, 126.769);
+  naverMap = new naver.maps.Map('map', {
+    center,
+    zoom: 13,
+    mapTypeId: naver.maps.MapTypeId.NORMAL,
+    mapDataControl: false,
+    scaleControl: true,
+    logoControl: false
+  });
+  naver.maps.Event.addListener(naverMap, 'click', closeAllInfoWindows);
+}
+
+function closeAllInfoWindows() {
+  infoWindows.forEach(iw => { if (iw && iw.close) iw.close(); });
+}
+
+function getMarkerSvg(cat) {
+  const meta = CAT_META[cat] || CAT_META.etc;
+  const color = meta.color;
+  const icon = meta.icon;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+    <defs><filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.4)"/>
+    </filter></defs>
+    <path d="M18 2C10.27 2 4 8.27 4 16c0 10 14 26 14 26S32 26 32 16C32 8.27 25.73 2 18 2z" fill="${color}" filter="url(#s)"/>
+    <circle cx="18" cy="16" r="9" fill="rgba(0,0,0,0.2)"/>
+    <text x="18" y="20" text-anchor="middle" font-size="11">${icon}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function placeMarkers(data) {
+  if (!naverMap) return;
+  // Remove old
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+  infoWindows = [];
+  if (clusterer) { try { clusterer.setMap(null); } catch(e){} clusterer = null; }
+
+  data.forEach((d, i) => {
+    if (!d.lat || !d.lng) return;
+    const pos = new naver.maps.LatLng(d.lat, d.lng);
+    const marker = new naver.maps.Marker({
+      position: pos,
+      map: naverMap,
+      icon: {
+        url: getMarkerSvg(d.category),
+        size: new naver.maps.Size(36, 44),
+        anchor: new naver.maps.Point(18, 44)
+      },
+      title: d.nameKo
+    });
+
+    const iw = new naver.maps.InfoWindow({
+      content: '<div style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:#333;max-width:160px;line-height:1.4">' + (d.nameKo || '') + '</div>',
+      borderWidth: 0,
+      borderRadius: '10px',
+      backgroundColor: '#fff',
+      anchorSize: new naver.maps.Size(10, 10)
+    });
+
+    infoWindows.push(iw);
+    markers.push(marker);
+
+    ;(function(m, iw_ref, item, idx) {
+      naver.maps.Event.addListener(m, 'click', function() {
+        closeAllInfoWindows();
+        iw_ref.open(naverMap, m);
+        // Scroll to card
+        const card = document.getElementById('card-' + idx);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          card.classList.add('highlight');
+          setTimeout(() => card.classList.remove('highlight'), 2000);
+        }
+      });
+    })(marker, iw, d, i);
+  });
+
+  // Clustering
+  try {
+    clusterer = new MarkerClustering({
+      minClusterSize: 3,
+      maxZoom: 15,
+      map: naverMap,
+      markers: markers,
+      disableClickZoom: false,
+      gridSize: 120,
+      icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
+      indexGenerator: [2, 5, 10],
+      stylingFunction: function(clusterMarker, count) {
+        clusterMarker.getElement().querySelector('div').textContent = count;
+      }
+    });
+  } catch(e) {
+    markers.forEach(m => m.setMap(naverMap));
+  }
+}
+
+function makeClusterIcon(size) {
+  const s = size <= 2 ? 36 : size <= 5 ? 44 : 52;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">
+    <circle cx="${s/2}" cy="${s/2}" r="${s/2-2}" fill="#A855F7" fill-opacity="0.85"/>
+    <circle cx="${s/2}" cy="${s/2}" r="${s/2-6}" fill="#7c3aed"/>
+    <div></div>
+  </svg>`;
+  return {
+    content: `<div style="width:${s}px;height:${s}px;border-radius:50%;background:linear-gradient(135deg,#A855F7,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${s<=36?'0.8':'0.9'}rem;box-shadow:0 2px 8px rgba(168,85,247,0.4);border:2px solid rgba(255,255,255,0.2)"><div></div></div>`,
+    size: new naver.maps.Size(s, s),
+    anchor: new naver.maps.Point(s/2, s/2)
+  };
+}
+
+function panToMarker(idx) {
+  if (!naverMap || !markers[idx]) return;
+  const m = markers[idx];
+  naverMap.panTo(m.getPosition());
+  closeAllInfoWindows();
+  infoWindows[idx] && infoWindows[idx].open(naverMap, m);
+}
+
+// ===================== DISTANCE =====================
+function calcDist(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function formatDist(m) {
+  return m < 1000 ? Math.round(m) + 'm' : (m/1000).toFixed(1) + 'km';
+}
+
+function showMyLocation() {
+  const t = UI_TEXT[currentLang] || UI_TEXT.ko;
+  const btn = document.getElementById('myLocBtn');
+  if (!navigator.geolocation) { alert(t.locError); return; }
+  btn.classList.add('loading');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      btn.classList.remove('loading');
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      if (naverMap) {
+        const loc = new naver.maps.LatLng(userLat, userLng);
+        naverMap.panTo(loc);
+        new naver.maps.Marker({
+          position: loc, map: naverMap,
+          icon: {
+            content: '<div style="width:14px;height:14px;border-radius:50%;background:#60a5fa;border:2px solid #fff;box-shadow:0 0 0 4px rgba(96,165,250,0.3)"></div>',
+            anchor: new naver.maps.Point(7, 7)
+          }
+        });
+      }
+      if (currentSort === 'default') {
+        currentSort = 'distance';
+        renderSortBar();
+      }
+      renderCards();
+    },
+    err => {
+      btn.classList.remove('loading');
+      alert(err.code === 1 ? t.locDenied : t.locError);
+    },
+    { timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// ===================== FILTERS =====================
+function renderFilters() {
+  const t = UI_TEXT[currentLang] || UI_TEXT.ko;
+  const counts = { all: storeData.length };
+  Object.keys(CAT_META).forEach(c => { counts[c] = storeData.filter(d => d.category === c).length; });
+
+  const el = document.getElementById('filters');
+  if (!el) return;
+
+  const cats = [
+    { id:'all', label: t.filterAll },
+    ...Object.keys(CAT_META).map(c => ({ id:c, label: CAT_META[c][currentLang] || CAT_META[c].ko }))
+  ];
+
+  el.innerHTML = cats.map(c =>
+    `<button class="filter-btn${currentCat===c.id?' active':''}" onclick="setFilter('${c.id}')">
+      ${c.id !== 'all' ? (CAT_META[c.id]?.icon||'') + ' ' : ''}${c.label}<span class="filter-count">${counts[c.id]||0}</span>
+    </button>`
+  ).join('');
+}
+
+function setFilter(cat) {
+  currentCat = cat;
+  renderFilters();
+  renderCards();
+  updateMapMarkers();
+}
+
+// ===================== SORT BAR =====================
+function renderSortBar() {
+  const t = UI_TEXT[currentLang] || UI_TEXT.ko;
+  const el = document.getElementById('sortBar');
+  if (!el) return;
+  el.innerHTML = `
+    <button class="sort-btn${currentSort==='default'?' active':''}" onclick="setSort('default')">${t.sortDefault}</button>
+    <button class="sort-btn${currentSort==='distance'?' active':''}" onclick="setSort('distance')">${t.sortDist}</button>
+  `;
+}
+
+function setSort(s) {
+  if (s === 'distance' && !userLat) { showMyLocation(); return; }
+  currentSort = s;
+  renderSortBar();
+  renderCards();
+}
+
+// ===================== MAP LINK =====================
+function getMapLink(d) {
+  if (currentLang === 'ko') {
+    return 'https://map.naver.com/v5/search/' + encodeURIComponent(d.addressKo || d.nameKo);
+  }
+  const query = encodeURIComponent((d.addressEn || d.nameEn || d.nameKo) + ' ' + (d.nameKo || ''));
+  return 'https://www.google.com/maps/search/?api=1&query=' + query;
+}
+
+// ===================== CARDS =====================
+function getFilteredSorted() {
+  let data = currentCat === 'all' ? [...storeData] : storeData.filter(d => d.category === currentCat);
+
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  if (q) {
+    data = data.filter(d =>
+      (d.nameKo||'').toLowerCase().includes(q) ||
+      (d.nameEn||'').toLowerCase().includes(q) ||
+      (d.nameZh||'').toLowerCase().includes(q) ||
+      (d.nameJa||'').toLowerCase().includes(q) ||
+      (d.addressKo||'').toLowerCase().includes(q) ||
+      (d.addressEn||'').toLowerCase().includes(q)
+    );
+  }
+
+  if (currentSort === 'distance' && userLat) {
+    data.sort((a, b) => {
+      const da = (a.lat && a.lng) ? calcDist(userLat, userLng, a.lat, a.lng) : Infinity;
+      const db = (b.lat && b.lng) ? calcDist(userLat, userLng, b.lat, b.lng) : Infinity;
+      return da - db;
+    });
+  }
+
+  return data;
+}
+
+function getName(d) {
+  if (currentLang === 'ko') return d.nameKo || d.nameEn || '';
+  if (currentLang === 'zh') return d.nameZh || d.nameEn || d.nameKo || '';
+  if (currentLang === 'ja') return d.nameJa || d.nameEn || d.nameKo || '';
+  return d.nameEn || d.nameKo || '';
+}
+
+function getType(d) {
+  if (currentLang === 'ko') return d.typeKo || '';
+  if (currentLang === 'zh') return d.typeZh || d.typeEn || d.typeKo || '';
+  if (currentLang === 'ja') return d.typeJa || d.typeEn || d.typeKo || '';
+  return d.typeEn || d.typeKo || '';
+}
+
+function getAddr(d) {
+  if (currentLang === 'ko') return d.addressKo || '';
+  if (currentLang === 'zh') return d.addressZh || d.addressEn || d.addressKo || '';
+  if (currentLang === 'ja') return d.addressJa || d.addressEn || d.addressKo || '';
+  return d.addressEn || d.addressKo || '';
+}
+
+function getEvent(d) {
+  if (currentLang === 'ko') return d.eventKo || '';
+  if (currentLang === 'zh') return d.eventZh || d.eventEn || d.eventKo || '';
+  if (currentLang === 'ja') return d.eventJa || d.eventEn || d.eventKo || '';
+  return d.eventEn || d.eventKo || '';
+}
+
+function renderCards() {
+  const t = UI_TEXT[currentLang] || UI_TEXT.ko;
+  const data = getFilteredSorted();
+  const el = document.getElementById('cardList');
+  if (!el) return;
+
+  if (!data.length) {
+    el.innerHTML = `<div class="no-results">${t.noResults}</div>`;
+    return;
+  }
+
+  el.innerHTML = data.map((d, i) => {
+    const distStr = (userLat && d.lat && d.lng)
+      ? `<div class="distance">${t.distPrefix}${formatDist(calcDist(userLat, userLng, d.lat, d.lng))}${t.distSuffix}</div>` : '';
+    const eventStr = getEvent(d) ? `<div class="event-tag">${getEvent(d)}</div>` : '';
+    const mapUrl = getMapLink(d);
+
+    return `<div class="card cat-${d.category}" id="card-${i}" onclick="cardClick(${i})">
+      <div class="num">#${d.no}</div>
+      <div class="name">${getName(d)}</div>
+      <div class="type">${getType(d)}</div>
+      <div class="addr">${getAddr(d)}</div>
+      ${distStr}
+      ${eventStr}
+      <a href="${mapUrl}" target="_blank" class="map-link" onclick="event.stopPropagation()">${t.mapLinkText}</a>
+    </div>`;
+  }).join('');
+}
+
+function cardClick(idx) {
+  panToMarker(idx);
+  // collapse map on mobile
+  const mapWrap = document.querySelector('.map-wrap');
+  if (window.innerWidth < 768 && mapWrap && !mapWrap.classList.contains('collapsed')) {
+    mapWrap.classList.add('collapsed');
+  }
+}
+
+// ===================== MAP MARKERS UPDATE =====================
+function updateMapMarkers() {
+  const data = getFilteredSorted();
+  // Remove all markers first
+  markers.forEach(m => m.setMap(null));
+  if (clusterer) { try { clusterer.setMap(null); } catch(e){} clusterer = null; }
+
+  // Re-place only filtered markers
+  const filteredMarkers = [];
+  const filteredIWs = [];
+
+  data.forEach((d, i) => {
+    // Find original index in storeData for card linking
+    const origIdx = storeData.indexOf(d);
+    if (!d.lat || !d.lng) return;
+
+    const pos = new naver.maps.LatLng(d.lat, d.lng);
+    const marker = new naver.maps.Marker({
+      position: pos,
+      map: naverMap,
+      icon: {
+        url: getMarkerSvg(d.category),
+        size: new naver.maps.Size(36, 44),
+        anchor: new naver.maps.Point(18, 44)
+      }
+    });
+    const iw = new naver.maps.InfoWindow({
+      content: '<div style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:#333;max-width:160px;line-height:1.4">' + (d.nameKo || '') + '</div>',
+      borderWidth: 0,
+      borderRadius: '10px',
+      backgroundColor: '#fff',
+      anchorSize: new naver.maps.Size(10, 10)
+    });
+
+    filteredIWs.push(iw);
+    filteredMarkers.push(marker);
+
+    ;(function(m, iw_ref, origI) {
+      naver.maps.Event.addListener(m, 'click', function() {
+        filteredIWs.forEach(fw => { if (fw && fw.close) fw.close(); });
+        iw_ref.open(naverMap, m);
+        const card = document.getElementById('card-' + origI);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          card.classList.add('highlight');
+          setTimeout(() => card.classList.remove('highlight'), 2000);
+        }
+      });
+    })(marker, iw, i);
+  });
+
+  markers = filteredMarkers;
+  infoWindows = filteredIWs;
+
+  try {
+    clusterer = new MarkerClustering({
+      minClusterSize: 3,
+      maxZoom: 15,
+      map: naverMap,
+      markers: filteredMarkers,
+      disableClickZoom: false,
+      gridSize: 120,
+      icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
+      indexGenerator: [2, 5, 10],
+      stylingFunction: function(clusterMarker, count) {
+        clusterMarker.getElement().querySelector('div').textContent = count;
+      }
+    });
+  } catch(e) {
+    filteredMarkers.forEach(m => m.setMap(naverMap));
+  }
+}
+
+// ===================== SEARCH =====================
+function initSearch() {
+  const inp = document.getElementById('searchInput');
+  const clr = document.getElementById('searchClear');
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    clr.style.display = inp.value ? 'block' : 'none';
+    renderCards();
+    updateMapMarkers();
+  });
+}
+
+function clearSearch() {
+  const inp = document.getElementById('searchInput');
+  const clr = document.getElementById('searchClear');
+  if (inp) { inp.value = ''; inp.focus(); }
+  if (clr) clr.style.display = 'none';
+  renderCards();
+  updateMapMarkers();
+}
+
+// ===================== SCROLL TO TOP =====================
+function initScrollTop() {
+  const btn = document.getElementById('scrollTop');
+  if (!btn) return;
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('show', window.scrollY > 300);
+  }, { passive: true });
+  // For desktop card-list scroll
+  const cardList = document.getElementById('cardList');
+  if (cardList) {
+    cardList.addEventListener('scroll', () => {
+      btn.classList.toggle('show', cardList.scrollTop > 300 || window.scrollY > 300);
+    }, { passive: true });
+  }
+}
+
+// ===================== SERVICE WORKER =====================
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+// ===================== INIT APP =====================
+function initApp() {
+  prepareData();
+  initMap();
+  applyLang(currentLang);
+  renderFilters();
+  renderSortBar();
+  renderCards();
+  placeMarkers(storeData);
+  initSearch();
+  initScrollTop();
+  registerSW();
+}
+
+// ===================== DOMCONTENTLOADED =====================
+document.addEventListener('DOMContentLoaded', function() {
+  const lang = currentLang;
+  const gateOk = sessionStorage.getItem('thfa_gate');
+
+  if (lang && gateOk) {
+    // Already passed gate — show main directly
+    document.getElementById('gate').style.display = 'none';
+    const main = document.getElementById('mainContent');
+    main.style.display = 'block';
+    // Map was already loaded at page top
+    if (typeof naver !== 'undefined' && naver.maps) {
+      initApp();
+    } else {
+      // Wait for map script if still loading
+      const checkMap = setInterval(() => {
+        if (typeof naver !== 'undefined' && naver.maps) {
+          clearInterval(checkMap);
+          initApp();
+        }
+      }, 100);
+    }
+  } else {
+    // Show gate
+    const gate = document.getElementById('gate');
+    gate.style.display = 'flex';
+    // Auto-detect language
+    const browserLang = navigator.language || '';
+    if (!lang) {
+      if (browserLang.startsWith('zh')) {
+        document.querySelectorAll('.gate-btn').forEach((b, i) => {
+          if (i === 2) b.style.boxShadow = '0 0 0 2px rgba(168,85,247,0.6)';
+        });
+      } else if (browserLang.startsWith('ja')) {
+        document.querySelectorAll('.gate-btn').forEach((b, i) => {
+          if (i === 3) b.style.boxShadow = '0 0 0 2px rgba(168,85,247,0.6)';
+        });
+      } else if (!browserLang.startsWith('ko')) {
+        document.querySelectorAll('.gate-btn').forEach((b, i) => {
+          if (i === 1) b.style.boxShadow = '0 0 0 2px rgba(168,85,247,0.6)';
+        });
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
