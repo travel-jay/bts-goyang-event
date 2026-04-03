@@ -6,7 +6,8 @@
 <title>Treasure Hunt for ARMY</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700;900&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
 <script>
 var _lang = localStorage.getItem('thfa_lang') || '';
 var _gateOk = sessionStorage.getItem('thfa_gate');
@@ -29,7 +30,8 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .gate-orb.orb3{width:150px;height:150px;background:radial-gradient(circle at 50% 50%,#D8B4FE,#A855F7);top:40%;left:50%;transform:translateX(-50%);animation-delay:-1.5s}
 @keyframes orbFloat{0%{transform:translateY(0)}100%{transform:translateY(-20px)}}
 
-.gate-content{position:relative;z-index:1;text-align:center;padding:0 24px}
+.gate-content{position:relative;z-index:1;text-align:center;padding:0 24px;opacity:0;animation:gateFadeIn 0.6s ease 0.3s forwards}
+@keyframes gateFadeIn{to{opacity:1}}
 .gate-logo{font-family:'Bebas Neue','Montserrat',sans-serif;font-weight:400;font-size:3rem;letter-spacing:0.05em;margin-bottom:8px;line-height:1.05;text-transform:uppercase}
 .gate-logo .highlight{background:linear-gradient(135deg,#D8B4FE 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .gate-sub{font-size:0.85rem;color:rgba(255,255,255,0.45);font-weight:300;margin-bottom:48px}
