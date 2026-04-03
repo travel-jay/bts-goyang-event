@@ -359,23 +359,31 @@ function updateMarkers() {
     markers.push(marker);
   });
 
-  clusterer = new MarkerClustering({
-    minClusterSize: 2,
-    maxZoom: 16,
-    map: map,
-    markers: markers,
-    disableClickZoom: false,
-    gridSize: 120,
-    icons: [htmlClusterIcon(30), htmlClusterIcon(40), htmlClusterIcon(50)],
-    indexGenerator: [10, 50, 100],
-    stylingFunction: function(clusterMarker, count) {
-      var el = clusterMarker.getElement();
-      if (el) {
-        var span = el.querySelector('span');
-        if (span) span.textContent = count;
-      }
+  if (typeof MarkerClustering !== 'undefined') {
+    try {
+      clusterer = new MarkerClustering({
+        minClusterSize: 2,
+        maxZoom: 16,
+        map: map,
+        markers: markers,
+        disableClickZoom: false,
+        gridSize: 120,
+        icons: [htmlClusterIcon(30), htmlClusterIcon(40), htmlClusterIcon(50)],
+        indexGenerator: [10, 50, 100],
+        stylingFunction: function(clusterMarker, count) {
+          var el = clusterMarker.getElement();
+          if (el) {
+            var span = el.querySelector('span');
+            if (span) span.textContent = count;
+          }
+        }
+      });
+    } catch(e) {
+      markers.forEach(function(m) { m.setMap(map); });
     }
-  });
+  } else {
+    markers.forEach(function(m) { m.setMap(map); });
+  }
 }
 
 function htmlClusterIcon(size) {
