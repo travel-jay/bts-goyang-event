@@ -26,7 +26,7 @@ const UI_TEXT = {
     searchPlaceholder: '매장명 또는 주소 검색',
     noResults: '검색 결과가 없습니다',
     mapLinkText: '지도 보기',
-    naverLinkText: '네이버 지도',
+    naverLinkText: '매장 정보(네이버)',
     distPrefix: '내 위치에서',
     distSuffix: '',
     locError: '위치 정보를 가져올 수 없습니다.',
@@ -41,7 +41,7 @@ const UI_TEXT = {
     searchPlaceholder: 'Search store name or address',
     noResults: 'No results found',
     mapLinkText: 'View Map',
-    naverLinkText: 'Naver Map',
+    naverLinkText: 'Store Info(Naver)',
     distPrefix: '',
     distSuffix: ' from here',
     locError: 'Unable to get your location.',
@@ -56,7 +56,7 @@ const UI_TEXT = {
     searchPlaceholder: '搜索店铺名称或地址',
     noResults: '未找到结果',
     mapLinkText: '查看地图',
-    naverLinkText: 'Naver地图',
+    naverLinkText: '店铺信息(Naver)',
     distPrefix: '距离',
     distSuffix: '',
     locError: '无法获取您的位置。',
@@ -71,7 +71,7 @@ const UI_TEXT = {
     searchPlaceholder: '店舗名または住所を検索',
     noResults: '結果が見つかりません',
     mapLinkText: '地図を見る',
-    naverLinkText: 'Naver地図',
+    naverLinkText: '店舗情報(Naver)',
     distPrefix: 'ここから',
     distSuffix: '',
     locError: '位置情報を取得できません。',
@@ -405,11 +405,12 @@ function setSort(s) {
 
 // ===================== MAP LINK =====================
 function getNaverLink(d) {
+  const lang = (currentLang === 'ko') ? '' : '&lang=en';
   if (d.placeId) {
-    return 'https://map.naver.com/p/entry/place/' + d.placeId;
+    return 'https://map.naver.com/p/entry/place/' + d.placeId + '?c=' + lang;
   }
-  const q = (d.nameKo || '') + ' ' + (d.addressKo || '');
-  return 'https://map.naver.com/p/search/' + encodeURIComponent(q.trim());
+  const q = d.addressKo || d.nameKo || '';
+  return 'https://map.naver.com/p/search/' + encodeURIComponent(q.trim()) + '?' + lang;
 }
 
 function getMapLink(d) {
