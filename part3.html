@@ -25,8 +25,8 @@ const UI_TEXT = {
     guideTitle: '이벤트 참여 방법',
     searchPlaceholder: '매장명 또는 주소 검색',
     noResults: '검색 결과가 없습니다',
-    mapLinkText: '지도 보기',
-    naverLinkText: '매장 정보(네이버)',
+    naverLinkText: '네이버 지도',
+    googleLinkText: '구글 지도',
     distPrefix: '내 위치에서',
     distSuffix: '',
     locError: '위치 정보를 가져올 수 없습니다.',
@@ -40,8 +40,8 @@ const UI_TEXT = {
     guideTitle: 'How to Participate',
     searchPlaceholder: 'Search store name or address',
     noResults: 'No results found',
-    mapLinkText: 'View Map',
-    naverLinkText: 'Store Info(Naver)',
+    naverLinkText: 'Naver Map',
+    googleLinkText: 'Google Map',
     distPrefix: '',
     distSuffix: ' from here',
     locError: 'Unable to get your location.',
@@ -55,8 +55,8 @@ const UI_TEXT = {
     guideTitle: '活动参与方法',
     searchPlaceholder: '搜索店铺名称或地址',
     noResults: '未找到结果',
-    mapLinkText: '查看地图',
-    naverLinkText: '店铺信息(Naver)',
+    naverLinkText: 'Naver地图',
+    googleLinkText: '谷歌地图',
     distPrefix: '距离',
     distSuffix: '',
     locError: '无法获取您的位置。',
@@ -70,8 +70,8 @@ const UI_TEXT = {
     guideTitle: 'イベント参加方法',
     searchPlaceholder: '店舗名または住所を検索',
     noResults: '結果が見つかりません',
-    mapLinkText: '地図を見る',
-    naverLinkText: '店舗情報(Naver)',
+    naverLinkText: 'Naver地図',
+    googleLinkText: 'Google地図',
     distPrefix: 'ここから',
     distSuffix: '',
     locError: '位置情報を取得できません。',
@@ -405,18 +405,14 @@ function setSort(s) {
 
 // ===================== MAP LINK =====================
 function getNaverLink(d) {
-  const lang = (currentLang === 'ko') ? '' : '&lang=en';
   if (d.placeId) {
-    return 'https://map.naver.com/p/entry/place/' + d.placeId + '?c=' + lang;
+    return 'https://map.naver.com/p/entry/place/' + d.placeId;
   }
   const q = d.addressKo || d.nameKo || '';
-  return 'https://map.naver.com/p/search/' + encodeURIComponent(q.trim()) + '?' + lang;
+  return 'https://map.naver.com/p/search/' + encodeURIComponent(q.trim());
 }
 
-function getMapLink(d) {
-  if (currentLang === 'ko') {
-    return getNaverLink(d);
-  }
+function getGoogleLink(d) {
   const query = encodeURIComponent((d.addressEn || d.nameEn || d.nameKo) + ' ' + (d.nameKo || ''));
   return 'https://www.google.com/maps/search/?api=1&query=' + query;
 }
@@ -492,9 +488,8 @@ function renderCards() {
     const distStr = (userLat && d.lat && d.lng)
       ? `<div class="distance">${t.distPrefix}${formatDist(calcDist(userLat, userLng, d.lat, d.lng))}${t.distSuffix}</div>` : '';
     const eventStr = getEvent(d) ? `<div class="event-tag">${getEvent(d)}</div>` : '';
-    const mapUrl = getMapLink(d);
     const naverUrl = getNaverLink(d);
-    const showNaverSeparate = currentLang !== 'ko';
+    const googleUrl = getGoogleLink(d);
 
     return `<div class="card cat-${d.category}" id="card-${origIdx}" onclick="cardClick(${origIdx})">
       <div class="num">#${d.no}</div>
@@ -505,7 +500,7 @@ function renderCards() {
       ${eventStr}
       <div class="map-links">
         <a href="${naverUrl}" target="_blank" class="map-link naver-link" onclick="event.stopPropagation()">${t.naverLinkText}</a>
-        ${showNaverSeparate ? `<a href="${mapUrl}" target="_blank" class="map-link" onclick="event.stopPropagation()">${t.mapLinkText}</a>` : ''}
+        <a href="${googleUrl}" target="_blank" class="map-link google-link" onclick="event.stopPropagation()">${t.googleLinkText}</a>
       </div>
     </div>`;
   }).join('');
