@@ -53,6 +53,7 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .gate-logo .highlight{background:linear-gradient(135deg,#D8B4FE 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .gate-sub{font-size:0.85rem;color:rgba(255,255,255,0.45);font-weight:300;margin-bottom:36px}
 .gate-date{margin-top:24px;font-size:0.8rem;color:rgba(255,255,255,0.35);font-weight:300;letter-spacing:0.05em}
+.gate-footer{margin-top:40px;font-size:0.65rem;color:rgba(255,255,255,0.25);font-weight:300;line-height:1.6;max-width:480px;padding:0 20px}
 .gate-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px;margin:0 auto}
 .gate-btn{padding:13px 16px;border-radius:14px;border:1px solid rgba(168,85,247,0.25);background:rgba(255,255,255,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font-size:0.88rem;font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:500;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:8px}
 .gate-btn:hover{background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.5);transform:translateY(-2px);box-shadow:0 8px 24px rgba(168,85,247,0.2)}
@@ -182,7 +183,7 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
   .card-list::-webkit-scrollbar{width:4px}
   .card-list::-webkit-scrollbar-track{background:transparent}
   .card-list::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.3);border-radius:4px}
-  .footer{display:none}
+  .footer{display:block;grid-column:1/-1}
 }
 </style>
 </head>
@@ -205,6 +206,12 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
       <button class="gate-btn" onclick="enterSite('ja')"><span class="flag">&#x1F1EF;&#x1F1F5;</span> 日本語</button>
     </div>
     <div class="gate-date">2026.04.09 ~ 11 | Goyang-si, Korea</div>
+    <div class="gate-footer">
+      본 페이지는 비영리 목적으로 운영되며, 어떠한 수익도 발생하지 않습니다. 모든 정보는 고양특례시 공식 홈페이지 제공 자료를 기준으로 작성되었습니다.<br>
+      This page is operated on a non-profit basis and generates no revenue. All information is based on data provided by the official Goyang City website.<br>
+      本页面以非营利目的运营，不产生任何收益。所有信息均基于高阳特例市官方网站提供的资料。<br>
+      本ページは非営利目的で運営されており、いかなる収益も発生しません。すべての情報は高陽特例市の公式サイト提供資料に基づいています。
+    </div>
   </div>
 </div>
 
@@ -271,7 +278,10 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 </div>
 
 <div class="footer">
-  <span data-ko="고양시 BTS 콘서트 이벤트" data-en="Goyang City BTS Concert Event" data-zh="高阳市BTS演唱会活动" data-ja="高陽市BTSコンサートイベント">고양시 BTS 콘서트 이벤트</span> | Borahae Benefits for ARMY
+  본 페이지는 비영리 목적으로 운영되며, 어떠한 수익도 발생하지 않습니다. 모든 정보는 고양특례시 공식 홈페이지 제공 자료를 기준으로 작성되었습니다.<br>
+  This page is operated on a non-profit basis and generates no revenue. All information is based on data provided by the official Goyang City website.<br>
+  本页面以非营利目的运营，不产生任何收益。所有信息均基于高阳特例市官方网站提供的资料。<br>
+  本ページは非営利目的で運営されており、いかなる収益も発生しません。すべての情報は高陽特例市の公式サイト提供資料に基づいています。
 </div>
 
 </div><!-- /main-content -->
