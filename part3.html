@@ -188,6 +188,13 @@ function applyLang(lang) {
   if (inp) {
     inp.placeholder = inp.getAttribute('data-' + lang + '-placeholder') || inp.getAttribute('data-ko-placeholder') || '';
   }
+
+  // Update sort dropdown label & items
+  if (typeof updateSortDropLabel === 'function') updateSortDropLabel();
+  document.querySelectorAll('.sort-dropdown button').forEach(b => {
+    const val = b.getAttribute('data-' + lang) || b.getAttribute('data-ko');
+    if (val) b.textContent = val;
+  });
 }
 
 // ===================== MAP =====================
@@ -704,18 +711,31 @@ function initScrollTop() {
   };
 }
 
-// ===================== SORT TOGGLE (MOBILE) =====================
-function toggleSortMobile() {
-  const btn = document.getElementById('sortToggleBtn');
-  if (!btn) return;
-  if (currentSort === 'distance') {
-    setSort('default');
-    btn.classList.remove('active');
-  } else {
-    setSort('distance');
-    btn.classList.add('active');
-  }
+// ===================== SORT DROPDOWN (MOBILE) =====================
+function toggleSortDrop() {
+  const wrap = document.getElementById('sortDropWrap');
+  if (wrap) wrap.classList.toggle('open');
 }
+function closeSortDrop() {
+  const wrap = document.getElementById('sortDropWrap');
+  if (wrap) wrap.classList.remove('open');
+}
+function setSortMobile(s) {
+  if (s === 'distance' && !userLat) { closeSortDrop(); showMyLocation(); return; }
+  setSort(s);
+  closeSortDrop();
+  updateSortDropLabel();
+}
+function updateSortDropLabel() {
+  const t = UI_TEXT[currentLang] || UI_TEXT.ko;
+  const label = document.getElementById('sortDropLabel');
+  if (label) label.textContent = currentSort === 'distance' ? t.sortDist : t.sortDefault;
+  const btns = document.querySelectorAll('.sort-dropdown button');
+  btns.forEach(b => b.classList.toggle('active', b.dataset.sort === currentSort));
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.sort-drop-wrap')) closeSortDrop();
+});
 
 // ===================== SEARCH TOGGLE (MOBILE) =====================
 function toggleSearchMobile() {
