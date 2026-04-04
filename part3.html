@@ -238,7 +238,7 @@ function placeMarkers(data) {
     });
 
     const iw = new naver.maps.InfoWindow({
-      content: '<div style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:#333;max-width:160px;line-height:1.4">' + (d.nameKo || '') + '</div>',
+      content: '<div style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:#333;max-width:200px;line-height:1.4">' + getName(d) + '</div>',
       borderWidth: 0,
       borderRadius: '10px',
       backgroundColor: '#fff',
@@ -523,7 +523,7 @@ function updateMapMarkers() {
       }
     });
     const iw = new naver.maps.InfoWindow({
-      content: '<div style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:#333;max-width:160px;line-height:1.4">' + (d.nameKo || '') + '</div>',
+      content: '<div style="padding:8px 12px;font-size:0.82rem;font-weight:600;color:#333;max-width:200px;line-height:1.4">' + getName(d) + '</div>',
       borderWidth: 0,
       borderRadius: '10px',
       backgroundColor: '#fff',
