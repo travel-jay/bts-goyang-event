@@ -129,24 +129,44 @@ function enterSite(lang) {
   document.head.appendChild(script);
 }
 
-function toggleLang() {
-  const order = ['ko','en','zh','ja'];
-  const idx = order.indexOf(currentLang);
-  const next = order[(idx + 1) % order.length];
-  currentLang = next;
-  localStorage.setItem('thfa_lang', next);
-  applyLang(next);
+function toggleLangMenu() {
+  const btn = document.getElementById('langBtn');
+  const menu = document.getElementById('langMenu');
+  if (!btn || !menu) return;
+  const isOpen = menu.classList.contains('open');
+  if (isOpen) {
+    menu.classList.remove('open');
+    btn.classList.remove('open');
+  } else {
+    menu.classList.add('open');
+    btn.classList.add('open');
+    // 현재 언어 항목에 active 표시
+    menu.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-lang') === currentLang);
+    });
+  }
+}
+
+function selectLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('thfa_lang', lang);
+  // 메뉴 닫기
+  document.getElementById('langMenu')?.classList.remove('open');
+  document.getElementById('langBtn')?.classList.remove('open');
+  applyLang(lang);
   renderFilters();
   renderSortBar();
   renderCards();
 }
 
+const LANG_LABEL = { ko:'한국어', en:'English', zh:'中文', ja:'日本語' };
+
 function applyLang(lang) {
   const t = UI_TEXT[lang] || UI_TEXT.ko;
 
-  // Update langBtn label
+  // Update langBtn label (현재 언어명 표시)
   const btn = document.getElementById('langBtn');
-  if (btn) btn.textContent = t.langNext;
+  if (btn) btn.innerHTML = LANG_LABEL[lang] + ' <span class="arrow">▼</span>';
 
   // Update data-ko/en/zh/ja elements
   document.querySelectorAll('[data-ko]').forEach(el => {
@@ -475,11 +495,6 @@ function renderCards() {
 
 function cardClick(idx) {
   panToMarker(idx);
-  // collapse map on mobile
-  const mapWrap = document.querySelector('.map-wrap');
-  if (window.innerWidth < 768 && mapWrap && !mapWrap.classList.contains('collapsed')) {
-    mapWrap.classList.add('collapsed');
-  }
 }
 
 // ===================== MAP MARKERS UPDATE =====================
@@ -553,6 +568,16 @@ function updateMapMarkers() {
 }
 
 // ===================== SEARCH =====================
+function initLangDropdown() {
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('langWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('langMenu')?.classList.remove('open');
+      document.getElementById('langBtn')?.classList.remove('open');
+    }
+  });
+}
+
 function initSearch() {
   const inp = document.getElementById('searchInput');
   const clr = document.getElementById('searchClear');
@@ -606,6 +631,7 @@ function initApp() {
   renderCards();
   placeMarkers(storeData);
   initSearch();
+  initLangDropdown();
   initScrollTop();
   registerSW();
 }

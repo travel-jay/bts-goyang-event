@@ -43,14 +43,22 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 
 /* ===== Main Content ===== */
 .main-content{display:none}
-.main-content.visible{display:block}
 
 /* Header */
 .header{background:rgba(18,18,18,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(168,85,247,0.15);color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:100}
 .header h1{font-family:'Bebas Neue','Montserrat',sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:0.04em;margin-bottom:2px;background:linear-gradient(135deg,#D8B4FE 0%,#A855F7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .header .sub{font-size:0.78rem;opacity:0.7;font-weight:300}
-.lang-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:#D8B4FE;padding:6px 14px;border-radius:14px;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all 0.2s}
+.lang-wrap{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+.lang-toggle{background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);color:#D8B4FE;padding:6px 12px;border-radius:14px;cursor:pointer;font-size:0.8rem;font-weight:500;transition:all 0.2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
 .lang-toggle:hover{background:rgba(168,85,247,0.3);border-color:rgba(168,85,247,0.5)}
+.lang-toggle .arrow{font-size:0.6rem;opacity:0.7;transition:transform 0.2s}
+.lang-toggle.open .arrow{transform:rotate(180deg)}
+.lang-menu{position:absolute;top:calc(100% + 6px);right:0;background:rgba(24,24,24,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(168,85,247,0.25);border-radius:14px;overflow:hidden;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,0.4);opacity:0;visibility:hidden;transform:translateY(-6px);transition:all 0.2s;z-index:200}
+.lang-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
+.lang-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:transparent;color:rgba(255,255,255,0.7);font-size:0.82rem;cursor:pointer;transition:background 0.15s;font-family:'Poppins','Noto Sans KR',sans-serif;text-align:left}
+.lang-menu button:hover{background:rgba(168,85,247,0.15);color:#fff}
+.lang-menu button.active{color:#D8B4FE;font-weight:700;background:rgba(168,85,247,0.1)}
+.lang-menu button:not(:last-child){border-bottom:1px solid rgba(255,255,255,0.05)}
 
 /* Guide */
 .guide-section{background:rgba(255,255,255,0.03);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);margin:10px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,85,247,0.12)}
@@ -64,8 +72,11 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .guide-content-inner ol{padding-left:18px}
 .guide-content-inner li{margin-bottom:5px}
 
+/* Controls (sticky on mobile) */
+.controls{position:sticky;top:66px;z-index:99;background:#121212;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.04)}
+
 /* Search */
-.search-wrap{padding:10px 10px 0;position:relative}
+.search-wrap{padding:8px 10px 0;position:relative}
 .search-wrap input{width:100%;padding:10px 14px 10px 38px;border:1px solid rgba(168,85,247,0.2);border-radius:24px;font-size:0.85rem;outline:none;transition:all 0.2s;background:rgba(255,255,255,0.04);color:#fff;font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:300}
 .search-wrap input::placeholder{color:rgba(255,255,255,0.3)}
 .search-wrap input:focus{border-color:rgba(168,85,247,0.5);background:rgba(255,255,255,0.06);box-shadow:0 0 0 3px rgba(168,85,247,0.1)}
@@ -73,7 +84,7 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .search-wrap .search-clear{position:absolute;right:22px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;background:none;cursor:pointer;color:rgba(255,255,255,0.4);font-size:1.1rem;display:none}
 
 /* Filters */
-.filters{display:flex;gap:7px;padding:10px 10px 5px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.filters{display:flex;gap:7px;padding:8px 10px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .filters::-webkit-scrollbar{display:none}
 .filter-btn{flex-shrink:0;padding:7px 14px;border-radius:22px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);font-size:0.78rem;cursor:pointer;transition:all 0.25s;white-space:nowrap;color:rgba(255,255,255,0.6);font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400}
 .filter-btn:hover{border-color:rgba(168,85,247,0.4);color:#D8B4FE;background:rgba(168,85,247,0.08)}
@@ -81,14 +92,13 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .filter-count{font-size:0.67rem;opacity:0.6;margin-left:3px}
 
 /* Sort */
-.sort-bar{display:flex;gap:6px;padding:0 10px 6px;align-items:center}
+.sort-bar{display:flex;gap:6px;padding:0 10px 4px;align-items:center}
 .sort-btn{padding:4px 11px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);font-size:0.72rem;cursor:pointer;transition:all 0.2s;color:rgba(255,255,255,0.45);font-family:'Poppins','Noto Sans KR',sans-serif}
 .sort-btn:hover{border-color:rgba(168,85,247,0.3);color:#D8B4FE}
 .sort-btn.active{background:rgba(168,85,247,0.15);color:#D8B4FE;border-color:rgba(168,85,247,0.3)}
 
 /* Map */
-.map-wrap{margin:10px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,85,247,0.15);height:45vh;min-height:280px;position:sticky;top:60px;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:height 0.3s ease,min-height 0.3s ease,border-radius 0.3s ease}
-.map-wrap.collapsed{height:22vh;min-height:140px;border-radius:0 0 16px 16px;margin-top:0}
+.map-wrap{margin:10px;border-radius:16px;overflow:hidden;border:1px solid rgba(168,85,247,0.15);height:40vh;min-height:240px;position:relative;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
 #map{width:100%;height:100%}
 .my-loc-btn{position:absolute;bottom:14px;left:14px;z-index:10;width:38px;height:38px;border-radius:50%;border:1px solid rgba(168,85,247,0.2);background:rgba(18,18,18,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
 .my-loc-btn:hover{background:rgba(168,85,247,0.2);border-color:rgba(168,85,247,0.4)}
@@ -130,16 +140,20 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
   .gate-logo{font-size:5rem}
   .gate-sub{font-size:1rem}
   .gate-buttons{grid-template-columns:1fr 1fr;max-width:480px;justify-content:center}
-  .content-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
-  .map-wrap{margin:0;height:calc(100vh - 200px);position:sticky;top:140px;transition:none}
-  .map-wrap.collapsed{height:calc(100vh - 200px);min-height:unset;border-radius:16px;margin-top:0}
-  .card-list{padding:0 0 40px;max-height:calc(100vh - 200px);overflow-y:auto}
+  .lang-toggle{padding:7px 18px;font-size:0.85rem;border-radius:16px}
+  /* 2-col: map(left) | guide+controls+cards(right) */
+  .app-body{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"map guide" "map controls" "map cards";gap:0 10px;padding:10px;height:calc(100vh - 66px);overflow:hidden}
+  .map-wrap{grid-area:map;margin:0;height:100%;min-height:unset;border-radius:16px;position:relative}
+  .guide-section{grid-area:guide;margin:0 0 6px}
+  .controls{grid-area:controls;position:static;background:transparent;border-bottom:none;padding-bottom:0}
+  .search-wrap{padding:0 0 6px}
+  .filters{padding:0 0 4px}
+  .sort-bar{padding:0 0 4px}
+  .card-list{grid-area:cards;padding:4px 0 20px;overflow-y:auto;min-height:0}
   .card-list::-webkit-scrollbar{width:4px}
   .card-list::-webkit-scrollbar-track{background:transparent}
   .card-list::-webkit-scrollbar-thumb{background:rgba(168,85,247,0.3);border-radius:4px}
-  .filters{padding:10px}
-  .search-wrap{padding:10px 10px 0}
-  .lang-toggle{padding:7px 18px;font-size:0.85rem;border-radius:16px}
+  .footer{display:none}
 }
 </style>
 </head>
@@ -168,7 +182,15 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 <div class="main-content" id="mainContent">
 
 <div class="header">
-  <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+  <div class="lang-wrap" id="langWrap">
+    <button class="lang-toggle" onclick="toggleLangMenu()" id="langBtn">한국어 <span class="arrow">&#9660;</span></button>
+    <div class="lang-menu" id="langMenu">
+      <button onclick="selectLang('ko')" data-lang="ko">&#x1F1F0;&#x1F1F7; 한국어</button>
+      <button onclick="selectLang('en')" data-lang="en">&#x1F1FA;&#x1F1F8; English</button>
+      <button onclick="selectLang('zh')" data-lang="zh">&#x1F1E8;&#x1F1F3; 中文</button>
+      <button onclick="selectLang('ja')" data-lang="ja">&#x1F1EF;&#x1F1F5; 日本語</button>
+    </div>
+  </div>
   <h1>Borahae Benefits for ARMY</h1>
   <div class="sub"
     data-ko="BTS 고양 콘서트 이벤트 참여 매장 안내"
@@ -177,42 +199,44 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
     data-ja="BTS高陽コンサートイベント参加店舗ガイド"></div>
 </div>
 
-<div class="guide-section">
-  <button class="guide-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
-    <span data-ko="이벤트 참여 방법" data-en="How to Participate" data-zh="活动参与方法" data-ja="イベント参加方法">이벤트 참여 방법</span>
-    <span class="arrow">▼</span>
-  </button>
-  <div class="guide-content">
-    <div class="guide-content-inner">
-      <ol>
-        <li data-ko="아래 참여 매장을 방문하세요" data-en="Visit a participating store below" data-zh="请访问下方参与店铺" data-ja="下記の参加店舗を訪問してください">아래 참여 매장을 방문하세요</li>
-        <li data-ko="매장에서 이벤트 혜택을 확인하세요" data-en="Check the event benefits at the store" data-zh="在店铺确认活动优惠" data-ja="店舗でイベント特典をご確認ください">매장에서 이벤트 혜택을 확인하세요</li>
-        <li data-ko="혜택을 즐기고 고양시를 탐험하세요!" data-en="Enjoy the benefits and explore Goyang!" data-zh="享受优惠，探索高阳市！" data-ja="特典を楽しんで高陽市を探検しよう！">혜택을 즐기고 고양시를 탐험하세요!</li>
-      </ol>
-    </div>
-  </div>
-</div>
-
-<div class="search-wrap">
-  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-  <input type="text" id="searchInput"
-    data-ko-placeholder="매장명 또는 주소 검색"
-    data-en-placeholder="Search store name or address"
-    data-zh-placeholder="搜索店铺名称或地址"
-    data-ja-placeholder="店舗名または住所を検索" />
-  <button class="search-clear" id="searchClear" onclick="clearSearch()">&times;</button>
-</div>
-
-<div class="filters" id="filters"></div>
-<div class="sort-bar" id="sortBar"></div>
-
-<div class="content-wrap">
+<div class="app-body">
   <div class="map-wrap">
     <div id="map"></div>
     <button class="my-loc-btn" id="myLocBtn" onclick="showMyLocation()" title="내 위치">
       <svg viewBox="0 0 24 24" fill="none" stroke="#D8B4FE" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="8"/></svg>
     </button>
   </div>
+
+  <div class="guide-section">
+    <button class="guide-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+      <span data-ko="이벤트 참여 방법" data-en="How to Participate" data-zh="活动参与方法" data-ja="イベント参加方法">이벤트 참여 방법</span>
+      <span class="arrow">&#9660;</span>
+    </button>
+    <div class="guide-content">
+      <div class="guide-content-inner">
+        <ol>
+          <li data-ko="아래 참여 매장을 방문하세요" data-en="Visit a participating store below" data-zh="请访问下方参与店铺" data-ja="下記の参加店舗を訪問してください">아래 참여 매장을 방문하세요</li>
+          <li data-ko="매장에서 이벤트 혜택을 확인하세요" data-en="Check the event benefits at the store" data-zh="在店铺确认活动优惠" data-ja="店舗でイベント特典をご確認ください">매장에서 이벤트 혜택을 확인하세요</li>
+          <li data-ko="혜택을 즐기고 고양시를 탐험하세요!" data-en="Enjoy the benefits and explore Goyang!" data-zh="享受优惠，探索高阳市！" data-ja="特典を楽しんで高陽市を探検しよう！">혜택을 즐기고 고양시를 탐험하세요!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="searchInput"
+        data-ko-placeholder="매장명 또는 주소 검색"
+        data-en-placeholder="Search store name or address"
+        data-zh-placeholder="搜索店铺名称或地址"
+        data-ja-placeholder="店舗名または住所を検索" />
+      <button class="search-clear" id="searchClear" onclick="clearSearch()">&times;</button>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="sort-bar" id="sortBar"></div>
+  </div>
+
   <div class="card-list" id="cardList"></div>
 </div>
 
@@ -358,24 +382,44 @@ function enterSite(lang) {
   document.head.appendChild(script);
 }
 
-function toggleLang() {
-  const order = ['ko','en','zh','ja'];
-  const idx = order.indexOf(currentLang);
-  const next = order[(idx + 1) % order.length];
-  currentLang = next;
-  localStorage.setItem('thfa_lang', next);
-  applyLang(next);
+function toggleLangMenu() {
+  const btn = document.getElementById('langBtn');
+  const menu = document.getElementById('langMenu');
+  if (!btn || !menu) return;
+  const isOpen = menu.classList.contains('open');
+  if (isOpen) {
+    menu.classList.remove('open');
+    btn.classList.remove('open');
+  } else {
+    menu.classList.add('open');
+    btn.classList.add('open');
+    // 현재 언어 항목에 active 표시
+    menu.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-lang') === currentLang);
+    });
+  }
+}
+
+function selectLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('thfa_lang', lang);
+  // 메뉴 닫기
+  document.getElementById('langMenu')?.classList.remove('open');
+  document.getElementById('langBtn')?.classList.remove('open');
+  applyLang(lang);
   renderFilters();
   renderSortBar();
   renderCards();
 }
 
+const LANG_LABEL = { ko:'한국어', en:'English', zh:'中文', ja:'日本語' };
+
 function applyLang(lang) {
   const t = UI_TEXT[lang] || UI_TEXT.ko;
 
-  // Update langBtn label
+  // Update langBtn label (현재 언어명 표시)
   const btn = document.getElementById('langBtn');
-  if (btn) btn.textContent = t.langNext;
+  if (btn) btn.innerHTML = LANG_LABEL[lang] + ' <span class="arrow">▼</span>';
 
   // Update data-ko/en/zh/ja elements
   document.querySelectorAll('[data-ko]').forEach(el => {
@@ -704,11 +748,6 @@ function renderCards() {
 
 function cardClick(idx) {
   panToMarker(idx);
-  // collapse map on mobile
-  const mapWrap = document.querySelector('.map-wrap');
-  if (window.innerWidth < 768 && mapWrap && !mapWrap.classList.contains('collapsed')) {
-    mapWrap.classList.add('collapsed');
-  }
 }
 
 // ===================== MAP MARKERS UPDATE =====================
@@ -782,6 +821,16 @@ function updateMapMarkers() {
 }
 
 // ===================== SEARCH =====================
+function initLangDropdown() {
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('langWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('langMenu')?.classList.remove('open');
+      document.getElementById('langBtn')?.classList.remove('open');
+    }
+  });
+}
+
 function initSearch() {
   const inp = document.getElementById('searchInput');
   const clr = document.getElementById('searchClear');
@@ -835,6 +884,7 @@ function initApp() {
   renderCards();
   placeMarkers(storeData);
   initSearch();
+  initLangDropdown();
   initScrollTop();
   registerSW();
 }
