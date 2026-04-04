@@ -79,17 +79,18 @@ let currentLang = localStorage.getItem('thfa_lang') || 'ko';
 let currentCat = 'all';
 let currentSort = 'default';
 let userLat = null, userLng = null;
-let markers = [];
+let markerMap = {};
+let iwMap = {};
 let naverMap = null;
 let clusterer = null;
-let infoWindows = [];
 let storeData = [];
 
 // ===================== DATA =====================
 function prepareData() {
-  storeData = RAW_DATA.map(d => ({
+  storeData = RAW_DATA.map((d, i) => ({
     ...d,
-    category: d.cat || 'etc'
+    category: d.cat || 'etc',
+    _idx: i
   }));
 }
 
@@ -196,7 +197,7 @@ function initMap() {
 }
 
 function closeAllInfoWindows() {
-  infoWindows.forEach(iw => { if (iw && iw.close) iw.close(); });
+  Object.values(iwMap).forEach(iw => { if (iw && iw.close) iw.close(); });
 }
 
 // ===================== LANDMARK MARKERS =====================
@@ -270,17 +271,18 @@ function getMarkerSvg(cat) {
 function placeMarkers(data) {
   if (!naverMap) return;
   // Remove old
-  markers.forEach(m => m.setMap(null));
-  markers = [];
-  infoWindows = [];
+  Object.values(markerMap).forEach(m => m.setMap(null));
+  markerMap = {};
+  iwMap = {};
   if (clusterer) { try { clusterer.setMap(null); } catch(e){} clusterer = null; }
 
-  data.forEach((d, i) => {
+  const allMarkers = [];
+  data.forEach((d) => {
+    const origIdx = d._idx;
     if (!d.lat || !d.lng) return;
     const pos = new naver.maps.LatLng(d.lat, d.lng);
     const marker = new naver.maps.Marker({
       position: pos,
-      // map은 클러스터러가 관리 — 직접 설정 금지
       icon: {
         url: getMarkerSvg(d.category),
         size: new naver.maps.Size(36, 44),
@@ -297,21 +299,23 @@ function placeMarkers(data) {
       anchorSize: new naver.maps.Size(10, 10)
     });
 
-    infoWindows.push(iw);
-    markers.push(marker);
+    iwMap[origIdx] = iw;
+    markerMap[origIdx] = marker;
+    allMarkers.push(marker);
 
-    ;(function(m, iw_ref, item, idx) {
+    ;(function(m, iw_ref, cardIdx) {
       naver.maps.Event.addListener(m, 'click', function() {
         closeAllInfoWindows();
         iw_ref.open(naverMap, m);
-        const card = document.getElementById('card-' + idx);
+        const card = document.getElementById('card-' + cardIdx);
         if (card) {
           card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (card._hlTimer) clearTimeout(card._hlTimer);
           card.classList.add('highlight');
-          setTimeout(() => card.classList.remove('highlight'), 2000);
+          card._hlTimer = setTimeout(() => card.classList.remove('highlight'), 2000);
         }
       });
-    })(marker, iw, d, i);
+    })(marker, iw, origIdx);
   });
 
   // Clustering
@@ -320,7 +324,7 @@ function placeMarkers(data) {
       minClusterSize: 2,
       maxZoom: 18,
       map: naverMap,
-      markers: markers,
+      markers: allMarkers,
       disableClickZoom: false,
       gridSize: 120,
       icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
@@ -329,7 +333,7 @@ function placeMarkers(data) {
     });
   } catch(e) {
     console.error('MarkerClustering error:', e);
-    markers.forEach(m => m.setMap(naverMap));
+    allMarkers.forEach(m => m.setMap(naverMap));
   }
 }
 
@@ -350,11 +354,12 @@ function clusterStyling(clusterMarker, count) {
 }
 
 function panToMarker(idx) {
-  if (!naverMap || !markers[idx]) return;
-  const m = markers[idx];
+  if (!naverMap || !markerMap[idx]) return;
+  const m = markerMap[idx];
   naverMap.panTo(m.getPosition());
+  naverMap.setZoom(Math.max(naverMap.getZoom(), 15));
   closeAllInfoWindows();
-  infoWindows[idx] && infoWindows[idx].open(naverMap, m);
+  if (iwMap[idx]) iwMap[idx].open(naverMap, m);
 }
 
 // ===================== DISTANCE =====================
@@ -478,7 +483,9 @@ function getFilteredSorted() {
       (d.nameZh||'').toLowerCase().includes(q) ||
       (d.nameJa||'').toLowerCase().includes(q) ||
       (d.addressKo||'').toLowerCase().includes(q) ||
-      (d.addressEn||'').toLowerCase().includes(q)
+      (d.addressEn||'').toLowerCase().includes(q) ||
+      (d.addressZh||'').toLowerCase().includes(q) ||
+      (d.addressJa||'').toLowerCase().includes(q)
     );
   }
 
@@ -561,7 +568,7 @@ function renderCards() {
   }
 
   el.innerHTML = data.map((d) => {
-    const origIdx = storeData.indexOf(d);
+    const origIdx = d._idx;
     const distStr = (userLat && d.lat && d.lng)
       ? `<div class="distance">${t.distPrefix}${formatDist(calcDist(userLat, userLng, d.lat, d.lng))}${t.distSuffix}</div>` : '';
     const eventStr = formatBenefits(getEvent(d));
@@ -596,27 +603,30 @@ function renderCards() {
 
 function cardClick(idx) {
   panToMarker(idx);
+  // 모바일: 지도가 보이도록 상단으로 스크롤
+  if (window.innerWidth < 768) {
+    const mapEl = document.querySelector('.map-wrap');
+    if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 // ===================== MAP MARKERS UPDATE =====================
 function updateMapMarkers() {
+  if (!naverMap) return;
   const data = getFilteredSorted();
-  // Remove all markers first
-  markers.forEach(m => m.setMap(null));
+  Object.values(markerMap).forEach(m => m.setMap(null));
+  markerMap = {};
+  iwMap = {};
   if (clusterer) { try { clusterer.setMap(null); } catch(e){} clusterer = null; }
 
-  // Re-place only filtered markers
-  const filteredMarkers = [];
-  const filteredIWs = [];
-
+  const allMarkers = [];
   data.forEach((d) => {
-    const origIdx = storeData.indexOf(d);
+    const origIdx = d._idx;
     if (!d.lat || !d.lng) return;
 
     const pos = new naver.maps.LatLng(d.lat, d.lng);
     const marker = new naver.maps.Marker({
       position: pos,
-      // map은 클러스터러가 관리 — 직접 설정 금지
       icon: {
         url: getMarkerSvg(d.category),
         size: new naver.maps.Size(36, 44),
@@ -631,32 +641,31 @@ function updateMapMarkers() {
       anchorSize: new naver.maps.Size(10, 10)
     });
 
-    filteredIWs.push(iw);
-    filteredMarkers.push(marker);
+    iwMap[origIdx] = iw;
+    markerMap[origIdx] = marker;
+    allMarkers.push(marker);
 
     ;(function(m, iw_ref, cardIdx) {
       naver.maps.Event.addListener(m, 'click', function() {
-        filteredIWs.forEach(fw => { if (fw && fw.close) fw.close(); });
+        closeAllInfoWindows();
         iw_ref.open(naverMap, m);
         const card = document.getElementById('card-' + cardIdx);
         if (card) {
           card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (card._hlTimer) clearTimeout(card._hlTimer);
           card.classList.add('highlight');
-          setTimeout(() => card.classList.remove('highlight'), 2000);
+          card._hlTimer = setTimeout(() => card.classList.remove('highlight'), 2000);
         }
       });
     })(marker, iw, origIdx);
   });
-
-  markers = filteredMarkers;
-  infoWindows = filteredIWs;
 
   try {
     clusterer = new MarkerClustering({
       minClusterSize: 2,
       maxZoom: 18,
       map: naverMap,
-      markers: filteredMarkers,
+      markers: allMarkers,
       disableClickZoom: false,
       gridSize: 120,
       icons: [makeClusterIcon(2), makeClusterIcon(5), makeClusterIcon(10)],
@@ -664,7 +673,7 @@ function updateMapMarkers() {
       stylingFunction: clusterStyling
     });
   } catch(e) {
-    filteredMarkers.forEach(m => m.setMap(naverMap));
+    allMarkers.forEach(m => m.setMap(naverMap));
   }
 }
 
@@ -683,10 +692,11 @@ function initSearch() {
   const inp = document.getElementById('searchInput');
   const clr = document.getElementById('searchClear');
   if (!inp) return;
+  let searchTimer;
   inp.addEventListener('input', () => {
     clr.style.display = inp.value ? 'block' : 'none';
-    renderCards();
-    updateMapMarkers();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { renderCards(); updateMapMarkers(); }, 250);
   });
 }
 
