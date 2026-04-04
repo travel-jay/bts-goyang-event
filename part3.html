@@ -576,8 +576,7 @@ function renderCards() {
     const googleUrl = getGoogleLink(d);
 
     return `<div class="card cat-${d.category}" id="card-${origIdx}" onclick="cardClick(${origIdx})">
-      <div class="num">#${d.no}</div>
-      <div class="name">${getName(d)}</div>
+      <div class="name"><span class="num">#${d.no}</span>${getName(d)}</div>
       <div class="type">${getType(d)}</div>
       <div class="addr">${getAddr(d)}</div>
       ${distStr}
