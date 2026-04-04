@@ -203,7 +203,9 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 .tb-btn:hover{border-color:rgba(168,85,247,0.4);color:#D8B4FE;background:rgba(168,85,247,0.08)}
 .tb-btn.active{background:rgba(168,85,247,0.15);color:#D8B4FE;border-color:rgba(168,85,247,0.3)}
 .tb-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.header-info-btn{position:absolute;left:14px;top:50%;transform:translateY(-50%);padding:5px 8px;display:none}
 .search-wrap.mobile-open{display:block}
+.tb-tools{display:none;align-items:center;gap:4px;flex-shrink:0;padding-left:8px;margin-left:4px;border-left:1px solid rgba(255,255,255,0.1)}
 .guide-modal-overlay{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .guide-modal-overlay.open{display:flex;align-items:center;justify-content:center}
 .guide-modal{background:rgba(24,24,24,0.97);border:1px solid rgba(168,85,247,0.25);border-radius:16px;padding:20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
@@ -223,7 +225,9 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
   .controls .filters-sort-row{display:flex;align-items:center;gap:4px;padding:6px 10px 4px}
   .controls .filters{flex:1;padding:0}
   .controls .sort-bar{display:none}
-  .tb-btn{display:flex}
+  .tb-tools{display:flex}
+  .tb-tools .tb-btn{display:flex}
+  .header-info-btn{display:flex}
   .guide-section{display:none}
   .search-wrap{display:none}
 }
@@ -284,6 +288,9 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 <div class="main-content" id="mainContent">
 
 <div class="header">
+  <button class="tb-btn header-info-btn" id="guideInfoBtn" onclick="openGuideModal()" title="How to Participate">
+    <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+  </button>
   <div class="lang-wrap" id="langWrap">
     <button class="lang-toggle" onclick="toggleLangMenu()" id="langBtn">한국어 <span class="arrow">&#9660;</span></button>
     <div class="lang-menu" id="langMenu">
@@ -341,18 +348,15 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
       <button class="search-clear" id="searchClear" onclick="clearSearch()">&times;</button>
     </div>
     <div class="filters-sort-row">
-      <button class="tb-btn" id="guideInfoBtn" onclick="openGuideModal()" title="How to Participate">
-        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
-      </button>
       <div class="filters" id="filters"></div>
-      <button class="tb-btn" id="sortToggleBtn" onclick="toggleSortMobile()"
-        data-ko="거리순" data-en="Distance" data-zh="按距离" data-ja="距離順">
-        <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
-        <span>거리순</span>
-      </button>
-      <button class="tb-btn" id="searchToggleBtn" onclick="toggleSearchMobile()">
-        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      </button>
+      <div class="tb-tools">
+        <button class="tb-btn" id="sortToggleBtn" onclick="toggleSortMobile()" title="Sort by distance">
+          <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
+        </button>
+        <button class="tb-btn" id="searchToggleBtn" onclick="toggleSearchMobile()">
+          <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </button>
+      </div>
       <div class="sort-bar" id="sortBar"></div>
     </div>
   </div>
@@ -548,13 +552,16 @@ function selectLang(lang) {
 }
 
 const LANG_LABEL = { ko:'한국어', en:'English', zh:'中文', ja:'日本語' };
+const LANG_SHORT = { ko:'KOR', en:'ENG', zh:'CHN', ja:'JPN' };
 
 function applyLang(lang) {
   const t = UI_TEXT[lang] || UI_TEXT.ko;
 
-  // Update langBtn label (현재 언어명 표시)
+  // Update langBtn label (모바일: 줄임, 데스크탑: 풀네임)
   const btn = document.getElementById('langBtn');
-  if (btn) btn.innerHTML = LANG_LABEL[lang] + ' <span class="arrow">▼</span>';
+  const isMobile = window.innerWidth < 768;
+  const label = isMobile ? LANG_SHORT[lang] : LANG_LABEL[lang];
+  if (btn) btn.innerHTML = label + ' <span class="arrow">▼</span>';
 
   // Update data-ko/en/zh/ja elements
   document.querySelectorAll('[data-ko]').forEach(el => {
@@ -806,9 +813,10 @@ function renderFilters() {
     ...Object.keys(CAT_META).map(c => ({ id:c, label: CAT_META[c][currentLang] || CAT_META[c].ko }))
   ];
 
+  const isMobile = window.innerWidth < 768;
   el.innerHTML = cats.map(c =>
     `<button class="filter-btn${currentCat===c.id?' active':''}" onclick="setFilter('${c.id}')">
-      ${c.id !== 'all' ? (CAT_META[c.id]?.icon||'') + ' ' : ''}${c.label}<span class="filter-count">${counts[c.id]||0}</span>
+      ${(!isMobile && c.id !== 'all') ? (CAT_META[c.id]?.icon||'') + ' ' : ''}${c.label}<span class="filter-count">${counts[c.id]||0}</span>
     </button>`
   ).join('');
 }

@@ -166,13 +166,16 @@ function selectLang(lang) {
 }
 
 const LANG_LABEL = { ko:'한국어', en:'English', zh:'中文', ja:'日本語' };
+const LANG_SHORT = { ko:'KOR', en:'ENG', zh:'CHN', ja:'JPN' };
 
 function applyLang(lang) {
   const t = UI_TEXT[lang] || UI_TEXT.ko;
 
-  // Update langBtn label (현재 언어명 표시)
+  // Update langBtn label (모바일: 줄임, 데스크탑: 풀네임)
   const btn = document.getElementById('langBtn');
-  if (btn) btn.innerHTML = LANG_LABEL[lang] + ' <span class="arrow">▼</span>';
+  const isMobile = window.innerWidth < 768;
+  const label = isMobile ? LANG_SHORT[lang] : LANG_LABEL[lang];
+  if (btn) btn.innerHTML = label + ' <span class="arrow">▼</span>';
 
   // Update data-ko/en/zh/ja elements
   document.querySelectorAll('[data-ko]').forEach(el => {
@@ -424,9 +427,10 @@ function renderFilters() {
     ...Object.keys(CAT_META).map(c => ({ id:c, label: CAT_META[c][currentLang] || CAT_META[c].ko }))
   ];
 
+  const isMobile = window.innerWidth < 768;
   el.innerHTML = cats.map(c =>
     `<button class="filter-btn${currentCat===c.id?' active':''}" onclick="setFilter('${c.id}')">
-      ${c.id !== 'all' ? (CAT_META[c.id]?.icon||'') + ' ' : ''}${c.label}<span class="filter-count">${counts[c.id]||0}</span>
+      ${(!isMobile && c.id !== 'all') ? (CAT_META[c.id]?.icon||'') + ' ' : ''}${c.label}<span class="filter-count">${counts[c.id]||0}</span>
     </button>`
   ).join('');
 }
