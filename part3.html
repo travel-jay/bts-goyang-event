@@ -536,6 +536,34 @@ function getEvent(d) {
   return d.eventEn || d.eventKo || '';
 }
 
+function formatBenefits(text) {
+  if (!text) return '';
+  // Split by ○ bullet points
+  const parts = text.split('○').map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) {
+    // Single benefit or no ○ markers
+    const clean = text.replace(/^○\s*/, '').trim();
+    return clean ? `<div class="event-tag">${clean}</div>` : '';
+  }
+  // Separate ※ notes from benefits
+  const benefits = [];
+  let note = '';
+  parts.forEach(p => {
+    const noteIdx = p.indexOf('※');
+    if (noteIdx > -1) {
+      benefits.push(p.substring(0, noteIdx).trim());
+      note = p.substring(noteIdx).trim();
+    } else {
+      benefits.push(p);
+    }
+  });
+  let html = '<ul class="benefit-list">';
+  benefits.forEach(b => { if (b) html += `<li>${b}</li>`; });
+  html += '</ul>';
+  if (note) html += `<div class="benefit-note">${note}</div>`;
+  return html;
+}
+
 function renderCards() {
   const t = UI_TEXT[currentLang] || UI_TEXT.ko;
   const data = getFilteredSorted();
@@ -551,7 +579,7 @@ function renderCards() {
     const origIdx = storeData.indexOf(d);
     const distStr = (userLat && d.lat && d.lng)
       ? `<div class="distance">${t.distPrefix}${formatDist(calcDist(userLat, userLng, d.lat, d.lng))}${t.distSuffix}</div>` : '';
-    const eventStr = getEvent(d) ? `<div class="event-tag">${getEvent(d)}</div>` : '';
+    const eventStr = formatBenefits(getEvent(d));
     const naverUrl = getNaverLink(d);
     const googleUrl = getGoogleLink(d);
 
