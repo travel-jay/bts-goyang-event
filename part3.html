@@ -700,6 +700,58 @@ function initScrollTop() {
   };
 }
 
+// ===================== SORT TOGGLE (MOBILE) =====================
+function toggleSortMobile() {
+  const btn = document.getElementById('sortToggleBtn');
+  if (!btn) return;
+  if (currentSort === 'distance') {
+    setSort('default');
+    btn.classList.remove('active');
+  } else {
+    setSort('distance');
+    btn.classList.add('active');
+  }
+}
+
+// ===================== SEARCH TOGGLE (MOBILE) =====================
+function toggleSearchMobile() {
+  const wrap = document.querySelector('.search-wrap');
+  if (!wrap) return;
+  wrap.classList.toggle('mobile-open');
+  if (wrap.classList.contains('mobile-open')) {
+    const input = document.getElementById('searchInput');
+    if (input) input.focus();
+  }
+}
+
+// ===================== GUIDE MODAL (MOBILE) =====================
+function openGuideModal() {
+  const modal = document.getElementById('guideModal');
+  if (modal) modal.classList.add('open');
+  const t = UI_TEXT[currentLang] || UI_TEXT.ko;
+  const title = document.getElementById('guideModalTitle');
+  if (title) title.textContent = t.guideTitle;
+}
+function closeGuideModal() {
+  const modal = document.getElementById('guideModal');
+  if (modal) modal.classList.remove('open');
+}
+
+// ===================== MAP TOGGLE (MOBILE) =====================
+function toggleMap() {
+  const wrap = document.querySelector('.map-wrap');
+  const btn = document.getElementById('mapToggle');
+  if (!wrap || !btn) return;
+  const expanded = wrap.classList.toggle('expanded');
+  const lang = currentLang || 'ko';
+  btn.textContent = expanded
+    ? (btn.getAttribute('data-' + lang + '-collapse') || '지도 축소')
+    : (btn.getAttribute('data-' + lang + '-expand') || '지도 확대');
+  if (typeof naverMap !== 'undefined' && naverMap) {
+    setTimeout(() => naverMap.autoResize(), 350);
+  }
+}
+
 // ===================== SERVICE WORKER =====================
 function registerSW() {
   if ('serviceWorker' in navigator) {

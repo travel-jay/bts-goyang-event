@@ -198,6 +198,36 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
 /* Footer */
 .footer{text-align:center;padding:20px;font-size:0.7rem;color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.02);border-top:1px solid rgba(255,255,255,0.04);margin-top:10px;font-weight:300}
 
+/* Mobile toolbar buttons (pill style, unified) */
+.tb-btn{display:none;align-items:center;justify-content:center;flex-shrink:0;padding:7px 10px;border-radius:22px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.6);font-size:0.78rem;cursor:pointer;transition:all 0.2s;font-family:'Poppins','Noto Sans KR',sans-serif;white-space:nowrap;gap:4px}
+.tb-btn:hover{border-color:rgba(168,85,247,0.4);color:#D8B4FE;background:rgba(168,85,247,0.08)}
+.tb-btn.active{background:rgba(168,85,247,0.15);color:#D8B4FE;border-color:rgba(168,85,247,0.3)}
+.tb-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+.search-wrap.mobile-open{display:block}
+.guide-modal-overlay{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.guide-modal-overlay.open{display:flex;align-items:center;justify-content:center}
+.guide-modal{background:rgba(24,24,24,0.97);border:1px solid rgba(168,85,247,0.25);border-radius:16px;padding:20px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.guide-modal h3{font-size:0.95rem;margin-bottom:12px;color:#D8B4FE;font-weight:600}
+.guide-modal ol{padding-left:18px;font-size:0.82rem;line-height:1.8;color:rgba(255,255,255,0.7);font-weight:300}
+.guide-modal-close{margin-top:16px;width:100%;padding:10px;border:1px solid rgba(168,85,247,0.3);border-radius:12px;background:rgba(168,85,247,0.15);color:#D8B4FE;font-size:0.82rem;cursor:pointer;font-family:'Poppins','Noto Sans KR',sans-serif}
+
+/* Mobile optimizations */
+@media(max-width:767px){
+  .header h1{font-size:1.1rem;padding:0 70px}
+  .header .sub{display:none}
+  .header{padding:10px 16px}
+  .map-wrap{height:150px;min-height:unset;transition:height 0.3s ease}
+  .map-wrap.expanded{height:28vh;min-height:180px}
+  .map-toggle{position:absolute;bottom:8px;right:8px;z-index:10;padding:4px 10px;border-radius:12px;border:1px solid rgba(168,85,247,0.3);background:rgba(18,18,18,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#D8B4FE;font-size:0.68rem;cursor:pointer;transition:all 0.2s;font-family:'Poppins','Noto Sans KR',sans-serif}
+  .map-toggle:hover{background:rgba(168,85,247,0.2)}
+  .controls .filters-sort-row{display:flex;align-items:center;gap:4px;padding:6px 10px 4px}
+  .controls .filters{flex:1;padding:0}
+  .controls .sort-bar{display:none}
+  .tb-btn{display:flex}
+  .guide-section{display:none}
+  .search-wrap{display:none}
+}
+
 /* Desktop */
 @media(min-width:768px){
   .gate-logo{font-size:5rem}
@@ -277,6 +307,11 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
     <button class="my-loc-btn" id="myLocBtn" onclick="showMyLocation()" title="내 위치">
       <svg viewBox="0 0 24 24" fill="none" stroke="#D8B4FE" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="8"/></svg>
     </button>
+    <button class="map-toggle" id="mapToggle" onclick="toggleMap()"
+      data-ko-expand="지도 확대" data-ko-collapse="지도 축소"
+      data-en-expand="Expand Map" data-en-collapse="Collapse Map"
+      data-zh-expand="展开地图" data-zh-collapse="收起地图"
+      data-ja-expand="地図拡大" data-ja-collapse="地図縮小">지도 확대</button>
   </div>
 
   <div class="guide-section">
@@ -305,14 +340,40 @@ body{font-family:'Poppins','Noto Sans KR',sans-serif;font-weight:400;background:
         data-ja-placeholder="店舗名または住所を検索" />
       <button class="search-clear" id="searchClear" onclick="clearSearch()">&times;</button>
     </div>
-    <div class="filters" id="filters"></div>
-    <div class="sort-bar" id="sortBar"></div>
+    <div class="filters-sort-row">
+      <button class="tb-btn" id="guideInfoBtn" onclick="openGuideModal()" title="How to Participate">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+      </button>
+      <div class="filters" id="filters"></div>
+      <button class="tb-btn" id="sortToggleBtn" onclick="toggleSortMobile()"
+        data-ko="거리순" data-en="Distance" data-zh="按距离" data-ja="距離順">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
+        <span>거리순</span>
+      </button>
+      <button class="tb-btn" id="searchToggleBtn" onclick="toggleSearchMobile()">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+      <div class="sort-bar" id="sortBar"></div>
+    </div>
   </div>
 
   <div class="card-list" id="cardList"></div>
 </div>
 
 </div><!-- /main-content -->
+
+<div class="guide-modal-overlay" id="guideModal" onclick="closeGuideModal()">
+  <div class="guide-modal" onclick="event.stopPropagation()">
+    <h3 id="guideModalTitle">이벤트 참여 방법</h3>
+    <ol>
+      <li data-ko="아래 참여 매장을 방문하세요" data-en="Visit a participating store below" data-zh="请访问下方参与店铺" data-ja="下記の参加店舗を訪問してください">아래 참여 매장을 방문하세요</li>
+      <li data-ko="매장에서 이벤트 혜택을 확인하세요" data-en="Check the event benefits at the store" data-zh="在店铺确认活动优惠" data-ja="店舗でイベント特典をご確認ください">매장에서 이벤트 혜택을 확인하세요</li>
+      <li data-ko="혜택을 즐기고 고양시를 탐험하세요!" data-en="Enjoy the benefits and explore Goyang!" data-zh="享受优惠，探索高阳市！" data-ja="特典を楽しんで高陽市を探検しよう！">혜택을 즐기고 고양시를 탐험하세요!</li>
+    </ol>
+    <button class="guide-modal-close" onclick="closeGuideModal()"
+      data-ko="닫기" data-en="Close" data-zh="关闭" data-ja="閉じる">닫기</button>
+  </div>
+</div>
 
 <button class="scroll-top" id="scrollTop">
   <svg viewBox="0 0 24 24" fill="none" stroke="#D8B4FE" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg>
