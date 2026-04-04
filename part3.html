@@ -11,8 +11,8 @@ const CAT_META = {
 
 const CAT_KEYWORDS = {
   food:     ['카페','커피','베이커리','레스토랑','식당','음식','치킨','피자','쌀국수','라멘','한식','중식','일식','양식','분식','떡','순대','국밥','갈비','삼겹','해물','전골','찜','족발','냉면','칼국수','파스타','스테이크','샌드위치','버거','beer','bar','pub','브루어리','다이닝','bistro','cafe','coffee','bakery','restaurant','food','chicken'],
-  shopping: ['쇼핑','마트','편의점','슈퍼','옷','의류','패션','잡화','기념품','souvenir','shopping','mart','store','boutique','fashion','gift','선물','악세서리','보석','주얼리','craft','공예'],
-  activity: ['노래방','볼링','당구','pc방','게임','방탈출','테마','체험','투어','관광','스포츠','운동','fitness','gym','클라이밍','수영','골프','bowling','karaoke','game','tour','activity','experience','adventure'],
+  shopping: ['쇼핑','마트','편의점','슈퍼','옷','의류','패션','잡화','기념품','souvenir','shopping','mart','store','boutique','fashion','gift','선물','악세서리','보석','주얼리','craft','공예','굿즈','소품','goods','accessories','플라워','flower','생활용품','타월','분양','펫','pet'],
+  activity: ['노래방','노래연습장','볼링','당구','pc방','게임','방탈출','테마','체험','투어','관광','스포츠','운동','fitness','gym','클라이밍','수영','골프','bowling','karaoke','game','tour','activity','experience','adventure','놀이터','playground'],
   beauty:   ['성형','에스테틱','피부과','피부','뷰티','성형외과','beauty','aesthetic','plastic','skincare','dermatology','clinic','클리닉','spa','스파','헤어','nail','네일','살롱','salon','마사지','massage'],
   etc:      []
 };
@@ -92,7 +92,9 @@ let infoWindows = [];
 let storeData = [];
 
 // ===================== CATEGORY =====================
+const CAT_OVERRIDE = {76:'shopping',86:'shopping',90:'shopping',100:'shopping'};
 function getCategory(item) {
+  if (CAT_OVERRIDE[item.no]) return CAT_OVERRIDE[item.no];
   const combined = [item.typeKo||'', item.typeEn||'', item.nameKo||'', item.nameEn||''].join(' ').toLowerCase();
   for (const cat of ['beauty','food','shopping','activity']) {
     if (CAT_KEYWORDS[cat].some(k => combined.includes(k.toLowerCase()))) return cat;
