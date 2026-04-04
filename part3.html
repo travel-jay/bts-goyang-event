@@ -602,16 +602,25 @@ function clearSearch() {
 function initScrollTop() {
   const btn = document.getElementById('scrollTop');
   if (!btn) return;
-  window.addEventListener('scroll', () => {
-    btn.classList.toggle('show', window.scrollY > 300);
-  }, { passive: true });
-  // For desktop card-list scroll
   const cardList = document.getElementById('cardList');
-  if (cardList) {
-    cardList.addEventListener('scroll', () => {
-      btn.classList.toggle('show', cardList.scrollTop > 300 || window.scrollY > 300);
-    }, { passive: true });
+
+  // Show/hide based on card-list scroll or window scroll
+  function checkScroll() {
+    const cardScrolled = cardList && cardList.scrollTop > 300;
+    const windowScrolled = window.scrollY > 300;
+    btn.classList.toggle('show', cardScrolled || windowScrolled);
   }
+
+  window.addEventListener('scroll', checkScroll, { passive: true });
+  if (cardList) {
+    cardList.addEventListener('scroll', checkScroll, { passive: true });
+  }
+
+  // Scroll to top: both card-list and window
+  btn.onclick = function() {
+    if (cardList) cardList.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 }
 
 // ===================== SERVICE WORKER =====================
